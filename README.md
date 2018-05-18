@@ -5,7 +5,7 @@ ___Description___: This NN uses social media data to predict price change among 
 First, the algorithm aggregates all the data from every currency to train a general model with very low variance. This model is used to initialize custom models for each currency. Each currency is then trained on it's own unique dataset. This approach takes advantage of the massive amount of data availible across all currencies for better training, yet still mantains the advantage of customization per currency. It also helps to avoid overfitting.
 
 Additionally, once the primary model is trained, the customized models will be trivial to execute.
-
+<hr>
 Some unique facets of this algorithm include:
 
 ___Data Clensing___: Instead of just mining tweets that contain mentions of the currency we're looking for, we're going to parse the tweets for spam and promotional tweets. Tweets with the objective of promoting currencies should not be analyzed. To clense the data in this way, we will use prebuilt algorithms by other engineers.
@@ -33,28 +33,36 @@ The first test metric, for the general model, is calculating the loss solely on 
 
 The second test metric, is on each currency's customized model, to test what percent of positive predictions are within one standard deviation of the actual.
 
-##Data
-###Sources
+<h2>Data</h2>
+<h3>Sources</h3>
 A) Aggregated&Sentimented Tweet data
+
 B) Aggregated&Sentimented Tweet data only for top crypto influencers
+
 C) Aggregated&Sentimented Reddit data
+
 D) Aggregated&Sentimented Reddit data for top influencers
+
 E) Aggregated&Sentimented News data
+
 F) Aggregated&Sentimented News data on top publications
+
 G) Previous price behavior
+
 H) Trade volume
 
+
 All data is per minute
-###Preprocessing
+<h3>Preprocessing</h3>
 
 
-##Initialization
+<h2>Initialization</h2>
 
-##Training
+<h2>Training</h2>
 
-##Time Periods
+<h2>Time Periods</h2>
 1 minute, 5 minutes, 15 minutes, 30 minutes, 1 hour, 2 hours, 4 hours, 6 hours, 12 hours, 24 hours, 2 days, 7 days
 
-##Disadvantages to this approach
+<h2>Disadvantages to this approach</h2>
 Because this approach optimizes for positive predictions and optomizes for false negatives, not false positives, it will likely miss some bull periods in the market.
 
