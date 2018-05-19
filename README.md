@@ -1,5 +1,20 @@
 # CS230
 
+___Introduction___: Many papers have investigated the existence of relationships between social media data, news data, previous currency performance and bitcoin price fluctuation over discrete time periods. However, none have examined the exact relationship between these factors over continuous time periods. Additionally, papers either examine currency price prediction by classifying currencies as discrete entities or as a singular one. No papers have investigated the dynamic relations between them.
+<br><br>
+This paper aims to answer a few of the following types of questions:<br>
+1. How do different time periods of social media data and news data influence price change? For example, how might the past days news, and the past hours tweet data, influence the price change over the next six hours? This algorithm answers that question for 343 different time permutations.
+2. How are the behaviors of different currency exchanges interconnected? How can we optimize Bitcoin data to predict the price change of Etherium? This question is answered for 10,000 different currency permutations.
+3. What data is most closely correlated to the positive price-change of bitcoin? This question will be answered for every currency.
+<br><br>
+The inputs for this algorithm are tweets, reddit forums, news articles and currency performance data over the past two years for all major currencies. First, this data will be aggregated for each major currency. Next, written text will be converted into usable data through a customized Word2Vec model. Data will then be analyzed using two distinct Neural Networks.
+<br><br>
+The first network is a deep Neural Net which optimizes for low variance. This network is designed to establish a general relationship between the aforementioned data and aggregate currency performance. The weights from this more general model are intended to initialize the weights of the second model.
+<br><br>
+The second model utilizes transfer learning from the first model and is customized price predictions per currency. The second algorithm is designed to optimize for high positive-prediction recall, as opposed to high accuracy. This double-network approach was chosen in order to keep variance low, yet fully optimize predictions per currency.
+<br><br>
+
+
 ___Description___: This NN uses social media data to predict price change among cryptocurrencies. The goal of the algorithm is to predict positive change with high accuracy, and predicts over the below-mentioned time periods.
 
 First, the algorithm aggregates all the data from every currency to train a general model with very low variance. This model is used to initialize custom models for each currency. Each currency is then trained on it's own unique dataset. This approach takes advantage of the massive amount of data availible across all currencies for better training, yet still mantains the advantage of customization per currency. It also helps to avoid overfitting.
