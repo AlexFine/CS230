@@ -35,8 +35,8 @@ The second test metric, is on each currency's customized model, is calculating t
 
 <h2>Data</h2>
 <h3>Sources</h3>
-A) Aggregated&Sentimented Tweet data<br><br>
-B) Aggregated&Sentimented Tweet data only for top crypto influencers<br><br>
+<br><br>A) Aggregated&Sentimented Tweet data
+<br><br>B) Aggregated&Sentimented Tweet data only for top crypto influencers
 <br><br>C) Aggregated&Sentimented Reddit data
 <br><br>D) Aggregated&Sentimented Reddit data for top influencers
 <br><br>E) Aggregated&Sentimented News data for top publications
