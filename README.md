@@ -29,25 +29,19 @@ L(X, Y) = (Y - X)^2 • e^(sigmoid(Y)•x - Y)
 
 ___Test Metric___: To test the algorithm's performance, negative predictions do not matter as they will be ignored in trading. Additionally, the only predictions that matter are those which are most confident. If my algorithms makes 500 predictions, there only needs to be one or two great predictions. Therefore, the test metric is two-fold, and designed to optmize for best-case predictions.
 
-The first test metric, for the general model, is calculating the loss solely on positive predictions.
+The first test metric, for the general model, is calculating the percent of predictions that are correct within one standard deviation of the norm.
 
-The second test metric, is on each currency's customized model, to test what percent of positive predictions are within one standard deviation of the actual.
+The second test metric, is on each currency's customized model, is calculating the percent of positive predictions that are correct within one standard deviation of the norm, and the percent of negative predictions that are negative.
 
 <h2>Data</h2>
 <h3>Sources</h3>
-A) Aggregated&Sentimented Tweet data
-
-B) Aggregated&Sentimented Tweet data only for top crypto influencers
-
-C) Aggregated&Sentimented Reddit data
-
-D) Aggregated&Sentimented Reddit data for top influencers
-
-E) Aggregated&Sentimented News data for top publications
-
-G) Previous price behavior
-
-H) Trade volume
+A) Aggregated&Sentimented Tweet data<br><br>
+B) Aggregated&Sentimented Tweet data only for top crypto influencers<br><br>
+<br><br>C) Aggregated&Sentimented Reddit data
+<br><br>D) Aggregated&Sentimented Reddit data for top influencers
+<br><br>E) Aggregated&Sentimented News data for top publications
+<br><br>G) Previous price behavior
+<br><br>H) Trade volume
 
 
 All data is per minute. Ideally, we're looking for ~10 Million Tweets, ~100k Reddit posts, ~100k News articles
@@ -56,7 +50,7 @@ The process for preprocessing data is as follows: <br>
 Source A -<br>
 Step 1: Scrape twitter for tweets that mention a major currency <br>
 Step 2: Store each tweet with the tweet text, the number of likes + 2 * favorites and the timestamp<br>
-Step 3: Scale likes and favorites by time. This can be approximated by the function ~ Yarctan(1.5sqrt(x)) - 1/(1 + e^(-.1x)), where x is the time and Y is the scale factor necessary to match the rewtweet #<br>
+Step 3: Scale likes and favorites by time. This can be approximated by the function ~ Yarctan(1.5sqrt(x)) - 1/(1 + e^(-.1x)), where x is the time and Y is the scale factor necessary to match the rewtweet #**<br>
 Step 4: Setup Twitter data into a matrix described by the columns:
 [tweet text, scaled retweets, time stamp ]
 <br>Step 5: Reduce noise by iterating through the matrix, and using a pretrained n-gram model to remove tweets which are likely promotional, offers, or bots [6]. Remove these tweets from the tweet matrix.
@@ -70,8 +64,11 @@ Step 4: Setup Twitter data into a matrix described by the columns:
 <br>Vectoer B: [Aggregate sentiment /per minute]
 <br>Step 9: Create time vectors with moving averages over each minute. Create a moving average for each time frame, and have each one be a new vector. This results in 12 permutations of vectors A and B.
 <br>Step 10: Remove the first 7 days of tweet data from each vector in order to keep time alignment between moving averages. This will also remove the need for a bias in the moving average.
+<br>Step 11: Divide each vector by the set average to keep values more normalized to train faster.
 
-<br>The finished product should be a set of 24 vectors which represent aggregate twitter sentiment for a single currency. This process should be repeated for the top 100 major currencies. Each of those 24 vectors should be appended by each currency. It is CRITICAL that currency order is maintained through training, dev and test examples. If order is lost, the entire training algorithm FAILS.
+<br>The finished product should be a set of 24 vectors which represent aggregate twitter sentiment for a single currency. The most recent month of tweet data should be placed into the test set, the rest should be for training. This process should be repeated for the top 100 major currencies. Each of those 24 vectors should be appended by each currency. It is CRITICAL that currency order is maintained through training, dev and test examples. If order is lost, the entire training algorithm FAILS.
+
+<br>**This step is only really necessary for live testing on incoming data. No need to use it on mass data mining.
 
 <br>Store all datasets for each currency seperately. They will each be individually used later.
 
@@ -87,22 +84,33 @@ Step 4: Setup Twitter data into a matrix described by the columns:
 
 <br>Source H - Use common online sources to pull the readily availible data. Execute steps 9 and 10.
 
-<h2>Initialization</h2>
+<h2>Training Details</h2>
+On the main training model parameters will be initialized using Xavier initialization. We will use RELU activation functions in order to preserve the importance of extreme change. <br><br>
+Furthermore, on the main training model we use a number of regulation techniques in order to lower variance. <br><br>
 
-<h2>Training</h2>
+On the custom training algorithms we will use less regulation techniques as overfitting is less of a concern.<br><br>
+
+The algorithm will start with 50 hidden layers with 50 nodes in each layer. I'll see how this works and adapt accordingly. <br><br>
+<h2>Initial Steps</h2>
+First run the general model on prediction for one minute. Then use transfer learning on each mini training set to get the predictions for each smaller currency for that training set. <br><br>
+Next, retrain the model for each time period. Each of these will produce a different weight matrix. Rerun each mini training set on each time period. <br><br>
+This will yield a dictionary of results. The dictionary will be:
+{Currency name,
+vector of prediction accuracy for each time period]} <br><br>
+Successful results will be evaluated by the highest test accuracy for any time period, on any currency. <br><br>
 
 <h2>Time Periods</h2>
 1 minute, 5 minutes, 15 minutes, 30 minutes, 1 hour, 2 hours, 4 hours, 6 hours, 12 hours, 24 hours, 2 days, 7 days
 
-<h2>Sources</h2>
-1. http://cs230.stanford.edu/files_winter_2018/projects/6940331.pdf
-2. http://cs230.stanford.edu/files_winter_2018/projects/6927076.pdf
-3. http://cs230.stanford.edu/files_winter_2018/projects/6929537.pdf
-4. https://arxiv.org/abs/1610.09225
-5. https://kth.diva-portal.org/smash/get/diva2:1110776/FULLTEXT01.pdf
-6. http://stats.seandolinar.com/twitter-retweet-decay/
-7. C.J. Hutto and Eric Gilbert. Vader: A parsimonious rule-based model for sentiment analysis of social media text. In Eighth Inter- national AAAI Conference on Weblogs and Social Media, 2014.
-
 <h2>Disadvantages to this approach</h2>
 Because this approach optimizes for positive predictions and optomizes for false negatives, not false positives, it will likely miss some bull periods in the market.
+
+<h2>Sources</h2>
+<br>1. http://cs230.stanford.edu/files_winter_2018/projects/6940331.pdf
+<br>2. http://cs230.stanford.edu/files_winter_2018/projects/6927076.pdf
+<br>3. http://cs230.stanford.edu/files_winter_2018/projects/6929537.pdf
+<br>4. https://arxiv.org/abs/1610.09225
+<br>5. https://kth.diva-portal.org/smash/get/diva2:1110776/FULLTEXT01.pdf
+<br>6. http://stats.seandolinar.com/twitter-retweet-decay/
+<br>7. C.J. Hutto and Eric Gilbert. Vader: A parsimonious rule-based model for sentiment analysis of social media text. In Eighth Inter- national AAAI Conference on Weblogs and Social Media, 2014.
 
