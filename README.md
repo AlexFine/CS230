@@ -6,7 +6,7 @@ First, the algorithm aggregates all the data from every currency to train a gene
 
 Additionally, once the primary model is trained, the customized models will be trivial to execute.
 
-Please see the project paper in this repository for a more comprehensive view. 
+Please see the project paper in this repository for a more comprehensive description. 
 <hr>
 Some unique facets of this algorithm include:
 
