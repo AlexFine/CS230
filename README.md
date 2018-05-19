@@ -48,27 +48,26 @@ All data is per minute. Ideally, we're looking for ~10 Million Tweets, ~100k Red
 <h3>Preprocessing</h3><hr>
 The process for preprocessing data is as follows: <br>
 Source A -<br>
-Step 1: Scrape twitter for tweets that mention a major currency <br>
-Step 2: Store each tweet with the tweet text, the number of likes + 2 * favorites and the timestamp<br>
-Step 3: Scale likes and favorites by time. This can be approximated by the function ~ Yarctan(1.5sqrt(x)) - 1/(1 + e^(-.1x)), where x is the time and Y is the scale factor necessary to match the rewtweet #**<br>
-Step 4: Setup Twitter data into a matrix described by the columns:
+Step 1: Scrape twitter for tweets that mention a major currency
+<br><br>Step 2: Store each tweet with the tweet text, the number of likes + 2 * favorites and the timestamp
+<br><br>Step 3: Scale likes and favorites by time. This can be approximated by the function ~ Yarctan(1.5sqrt(x)) - 1/(1 + e^(-.1x)), where x is the time and Y is the scale factor necessary to match the rewtweet #
+<br>**This step is only really necessary for live testing on incoming data. No need to use it on mass data mining.
+<br><br>Step 4: Setup Twitter data into a matrix described by the columns:
 [tweet text, scaled retweets, time stamp ]
-<br>Step 5: Reduce noise by iterating through the matrix, and using a pretrained n-gram model to remove tweets which are likely promotional, offers, or bots [6]. Remove these tweets from the tweet matrix.
-<br>Step 6: Run sentiment analysis on each tweet, for a score between [-1, 1]. Use VADER by Hutto & Gilbert [7]. Append Matrix with these values. The matrix should now be:
+<br><br>Step 5: Reduce noise by iterating through the matrix, and using a pretrained n-gram model to remove tweets which are likely promotional, offers, or bots [6]. Remove these tweets from the tweet matrix.
+<br><br>Step 6: Run sentiment analysis on each tweet, for a score between [-1, 1]. Use VADER by Hutto & Gilbert [7]. Append Matrix with these values. The matrix should now be:
 [tweet text, scaled retweets, time stamp, sentiment ]
-<br>Step 7: Split the data into two matrix. For matrix one, multiply the sentiment by the scaled retweets number to give a relative significance to each tweet. Append the matrix and removing superfluous data (everything but the time stamp). For matrix two, remove the tweet text and the scaled retweet metric. Each matrix should now be:
+<br><br>Step 7: Split the data into two matrix. For matrix one, multiply the sentiment by the scaled retweets number to give a relative significance to each tweet. Append the matrix and removing superfluous data (everything but the time stamp). For matrix two, remove the tweet text and the scaled retweet metric. Each matrix should now be:
 <br>Matrix 1 - [Scaled signifiance, time stamp]
 <br>Matrix 2 - [Sentiment, time stamp]
-<br>Step 8: Combine tweets over each minute. Ie, anything tweeted in the same minute should be linearly-combined. For any minutes without tweets represented, the algorithm should just put 0 (though hopefully with enough data this should never be the case). The  matrix are now vectors:
+<br><br>Step 8: Combine tweets over each minute. Ie, anything tweeted in the same minute should be linearly-combined. For any minutes without tweets represented, the algorithm should just put 0 (though hopefully with enough data this should never be the case). The  matrix are now vectors:
 <br>Vector A: [Aggregate scaled signifance/per minute]
 <br>Vectoer B: [Aggregate sentiment /per minute]
-<br>Step 9: Create time vectors with moving averages over each minute. Create a moving average for each time frame, and have each one be a new vector. This results in 12 permutations of vectors A and B.
-<br>Step 10: Remove the first 7 days of tweet data from each vector in order to keep time alignment between moving averages. This will also remove the need for a bias in the moving average.
-<br>Step 11: Divide each vector by the set average to keep values more normalized to train faster.
+<br><br>Step 9: Create time vectors with moving averages over each minute. Create a moving average for each time frame, and have each one be a new vector. This results in 12 permutations of vectors A and B.
+<br><br>Step 10: Remove the first 7 days of tweet data from each vector in order to keep time alignment between moving averages. This will also remove the need for a bias in the moving average.
+<br><br>Step 11: Divide each vector by the set average to keep values more normalized to train faster.
 
-<br>The finished product should be a set of 24 vectors which represent aggregate twitter sentiment for a single currency. The most recent month of tweet data should be placed into the test set, the rest should be for training. This process should be repeated for the top 100 major currencies. Each of those 24 vectors should be appended by each currency. It is CRITICAL that currency order is maintained through training, dev and test examples. If order is lost, the entire training algorithm FAILS.
-
-<br>**This step is only really necessary for live testing on incoming data. No need to use it on mass data mining.
+<br><br>The finished product should be a set of 24 vectors which represent aggregate twitter sentiment for a single currency. The most recent month of tweet data should be placed into the test set, the rest should be for training. This process should be repeated for the top 100 major currencies. Each of those 24 vectors should be appended by each currency. It is CRITICAL that currency order is maintained through training, dev and test examples. If order is lost, the entire training algorithm FAILS.
 
 <br>Store all datasets for each currency seperately. They will each be individually used later.
 
