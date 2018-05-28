@@ -8,7 +8,7 @@ def alg(days, npercent, ppercent, netmarket, avgchange):
     for i in range (int(days/2 * (1 - npercent))):
         money = money * (1 - avgchange + (netmarket/days))
 
-    return money 
+    return money
 
 def market(days, npercent, ppercent, netmarket, avgchange):
     money = 100
@@ -21,16 +21,16 @@ def market(days, npercent, ppercent, netmarket, avgchange):
 
 def test():
     days = 365
-    npercent = 0.50
+    npercent = 0.60
     ppercent = 0.50
-    netmarket = 0.00
-    avgchange = 0.01
-    print("\nDays: %d" % days)
+    netmarket = -0.30
+    avgchange = 0.03
+    print("\nDays (intervals): %d" % days)
     print("Negative Prediction Accuracy: %.2f" % (npercent * 100) + "%")
     print("Positive Prediction Accuracy: %.2f" % (ppercent * 100) + "%")
-    print("Overall Net Market Performance: %.2f" % (netmarket * 100) + "%")
     print("Avg. Mag of Daily Market Change: %.2f" % (avgchange * 100) + "%")
-    print("Return Algorthm: %.2f" % (alg(365, npercent, ppercent, netmarket, avgchange) - 100) + "%")
-    print("Return Markets: %.2f" % (market(365, 0.50, 0.50, netmarket, avgchange) - 100) + "%")
-    print("\nAlgorithm results are an underestimate, market results are reflected accurately")
+    print("\nReturn Algorthm: %.2f" % (alg(days, npercent, ppercent, netmarket, avgchange) - 100) + "%")
+    print("Return Markets: %.2f"  % (netmarket * 100) + "%")
+
+    print("\nAlgorithm results are an underestimate")
 test()
