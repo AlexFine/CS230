@@ -29,6 +29,19 @@ X = Prediction
 Y = Actual
 L(X, Y) = (Y - X)^2 • e^(sigmoid(Y)•x - Y)
 
+Images of the updated loss function versus a standard least squared loss are below:
+X Axis = Prediction
+Y Axis = Loss
+
+y_hat = .5
+<img style="width:50%" src="LossVal.5.png">
+
+y_hat = 0
+<img style="width:50%" src="LossVal0.png">
+
+y_hat = -.5
+<img style="width:50%" src="LossVal-.5.png">
+
 ___Test Metric___: To test the algorithm's performance, negative predictions do not matter as they will be ignored in trading. Additionally, the only predictions that matter are those which are most confident. If my algorithms makes 500 predictions, there only needs to be one or two great predictions. Therefore, the test metric is two-fold, and designed to optmize for best-case predictions.
 
 The first test metric, for the general model, is calculating the percent of predictions that are correct within one standard deviation of the norm.
