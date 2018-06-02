@@ -1,3 +1,11 @@
+"""
+Algorithm amendments:
+1. Potentially change algorithm structure to optomize for predicting values instead of positive/negative
+2. Potentially change alg structure to optomize for classifications
+3. Change alg to predict on a test set
+
+"""
+
 from __future__ import print_function, division
 import numpy as np
 import tensorflow as tf
@@ -13,9 +21,15 @@ batch_size = 5
 num_layers = 3
 num_batches = total_series_length//batch_size//truncated_backprop_length
 
+print("num_batches: ", num_batches)
+
 def generateData():
     #Start by creating a random vector of data, half 0s and half 1s
-    x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
+    #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
+    x = np.random.random_sample((total_series_length,1))*2 - 1.0
+
+    np.clip(x, 0, 1.0, x)
+    print(x)
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
     y = np.roll(x, echo_step)
     #Reset data that is extra to zero instead of just removing it from the x vector
@@ -41,6 +55,7 @@ batchX_placeholder = tf.placeholder(tf.float32, [batch_size, truncated_backprop_
 batchY_placeholder = tf.placeholder(tf.int32, [batch_size, truncated_backprop_length])
 
 init_state = tf.placeholder(tf.float32, [num_layers, 2, batch_size, state_size])
+#init_state = tf.placeholder(tf.float32, [num_layers, 1, batch_size, state_size])
 
 state_per_layer_list = tf.unstack(init_state, axis=0)
 rnn_tuple_state = tuple(
@@ -70,8 +85,9 @@ states_series, current_state = tf.contrib.rnn.static_rnn(cell, inputs_series, in
 logits_series = [tf.matmul(state, W2) + b2 for state in states_series] #Broadcasted addition
 predictions_series = [tf.nn.softmax(logits) for logits in logits_series]
 
-#Calculate losses by calling tensor flow function on cross entropy loss with logits and label
-losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits=logits, labels=labels) for logits, labels in zip(logits_series,labels_series)]
+#Calculate losses by calling tensorflow function on cross entropy loss with logits and label
+#losses = [tf.losses.mean_squared_error(label, logits, weights = 1.0, scope=None, loss_collection = tf.GraphKeys.LOSSES) for label, logits in zip (logits_series, labels_series)]
+losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels) for logits, labels in zip(logits_series,labels_series)]
 total_loss = tf.reduce_mean(losses)
 
 train_step = tf.train.AdagradOptimizer(0.3).minimize(total_loss)
