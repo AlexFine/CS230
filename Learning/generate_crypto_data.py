@@ -17,14 +17,14 @@ def get_past_day_price(currency):
 #Retrieve top 100 currency's
 def top_100():
     coins = top.get_top_coins('USD', limit = 100)
-    price_matrix = []
+    price_matrix = np.zeros((1441,1))
     count = 0
     for i in coins:
         count += 1
-        price_matrix = np.hstack(([price_matrix, get_past_day_price(i["SYMBOL"])]))
+        print(price_matrix.shape)
+        price_matrix = np.c_[price_matrix, get_past_day_price(i["SYMBOL"])]
         print(count)
 
-    print(price_matrix.shape)
     return price_matrix
 
 #Normalizes vector values to between zero and one
