@@ -1,24 +1,33 @@
 import numpy as np
 from cryptocompy import price
-#from cryptocompy import top
+from cryptocompy import top
 
-def top(limit):
-    coin_data = top.get_top_coins('USD', limit=limit)
-    coin_name = [p['SYMBOL'] for p in coin_data]
-    coin_name
 
-    return coin_name
 
-def main():
-    print(price.get_current_price("BTC", ["USD"]))
-    data = price.get_historical_data('BTC', 'USD', 'minute', aggregate=1, limit=50)
-    #print(price.get_historical_data('BTC', 'USD', 'minute', aggregate=5, limit=5))
-
+#Retrieve a vector of prices for the last day
+def get_past_day_price():
+    data = price.get_historical_data('BTC', 'USD', 'minute', aggregate=1, limit=(1440))
+    price_vec = []
     for idx in data:
-        print ("Time: ", idx["time"], "Price: ", idx["close"])
+        price_vec.append(idx["close"])
+        #print("Time: ", idx["time"], "Close: ", idx["close"])
 
-    limit = 5
-    #top(5)
-    return 0
+    return price_vec
 
-main()
+#Normalizes vector values to between zero and one
+def normalize(vec):
+    vec = np.diff(vec)
+    vec[vec > 0] = 1
+    vec[vec < 0] = 0
+    """
+    For non-binary training uncomment the following lines
+    average = np.average(vec)
+    vec = vec - average
+    print(vec)
+    max_val = np.amax(vec)
+    vec = vec/max_val
+    print(vec)"""
+
+    return vec
+
+print(normalize(get_past_day_price()))
