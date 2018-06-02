@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 
 num_epochs = 100
 num_currencies = 5
-total_examples = 1440*num_currencies
+total_examples = 1440*(num_currencies + 1)
 #The number of training examples
-train_num = 1000*num_currencies
+train_num = 1000*(num_currencies + 1)
 total_series_length = total_examples - train_num
 truncated_backprop_length = 15
 state_size = 4
@@ -57,7 +57,10 @@ def generateTrainData():
     x = x[0:train_num, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
+
     y = np.roll(x, echo_step)
+    y[y > 0] = 1
+    y[y < 0] = 0
     #Reset data that is extra to zero instead of just removing it from the x vector
     y[:, 0:echo_step] = 0
 
@@ -88,7 +91,7 @@ rnn_tuple_state = tuple(
 W = tf.Variable(np.random.randn(state_size+1, state_size), dtype=tf.float32)
 b = tf.Variable(np.zeros((1,state_size)), dtype=tf.float32)
 
-W2 = tf.Variable(np.random.randn(state_size, num_classes),dtype=tf.float32)
+W2 = tf.Variable(np.random.randn(state_size, num_classes), dtype=tf.float32)
 b2 = tf.Variable(np.zeros((1,num_classes)), dtype=tf.float32)
 
 #Unpack Columns

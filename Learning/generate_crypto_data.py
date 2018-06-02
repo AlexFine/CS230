@@ -30,9 +30,10 @@ def top_n(n):
 
 #Normalizes vector values to between zero and one
 def normalize(vec):
+    vec = vec[:, 1:]
     vec = np.diff(vec, axis=0)
-    vec[vec > 0] = 1
-    vec[vec < 0] = 0
+    max_val = np.amax(vec, axis=0)
+    vec = vec/max_val
     """
     For non-binary training uncomment the following lines
     average = np.average(vec)
