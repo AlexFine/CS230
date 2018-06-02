@@ -7,15 +7,16 @@ Algorithm amendments:
 """
 
 from __future__ import print_function, division
-from generate_crypto_data import normalize, get_past_day_price
+from generate_crypto_data import normalize, top_n, get_past_day_price
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
 num_epochs = 100
-total_examples = 1440
+num_currencies = 5
+total_examples = 1440*num_currencies
 #The number of training examples
-train_num = 1000
+train_num = 1000*num_currencies
 total_series_length = total_examples - train_num
 truncated_backprop_length = 15
 state_size = 4
@@ -31,14 +32,17 @@ print("num_batches: ", num_batches)
 def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = normalize(get_past_day_price())
-    x = x[train_num:total_series_length]
+    x = normalize(top_n(num_currencies))
+    x = x[train_num:total_examples, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
     y = np.roll(x, echo_step)
     #Reset data that is extra to zero instead of just removing it from the x vector
-    y[0:echo_step] = 0
+    y[:, 0:echo_step] = 0
 
+    #Flatten into vector
+    x = x.flatten()
+    y = y.flatten()
     #Run the algorithm through batches in order to increase performance
     #Turn our vector of shape (total_series_length, 1) into a matrix of batches
     x = x.reshape((batch_size, -1))  # The first index changing slowest, subseries as rows
@@ -49,14 +53,17 @@ def generateTestData():
 def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = normalize(get_past_day_price())
-    x = x[0:train_num]
+    x = normalize(top_n(num_currencies))
+    x = x[0:train_num, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
     y = np.roll(x, echo_step)
     #Reset data that is extra to zero instead of just removing it from the x vector
-    y[0:echo_step] = 0
+    y[:, 0:echo_step] = 0
 
+    #Flatten into vector
+    x = x.flatten()
+    y = y.flatten()
     #Run the algorithm through batches in order to increase performance
     #Turn our vector of shape (total_series_length, 1) into a matrix of batches
     x = x.reshape((batch_size, -1))  # The first index changing slowest, subseries as rows
@@ -126,8 +133,6 @@ def plot(loss_list, predictions_series, batchX, batchY):
     plt.draw()
     plt.pause(0.0001)
 
-"""def test():
-    """
 
 with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
@@ -135,9 +140,9 @@ with tf.Session() as sess:
     plt.figure()
     plt.show()
     loss_list = []
+    x_train,y_train = generateTrainData()
 
     for epoch_idx in range(num_epochs):
-        x,y = generateTrainData()
 
         _current_state = np.zeros((num_layers, 2, batch_size, state_size))
 
@@ -147,8 +152,8 @@ with tf.Session() as sess:
             start_idx = batch_idx * truncated_backprop_length
             end_idx = start_idx + truncated_backprop_length
 
-            batchX = x[:,start_idx:end_idx]
-            batchY = y[:,start_idx:end_idx]
+            batchX = x_train[:,start_idx:end_idx]
+            batchY = y_train[:,start_idx:end_idx]
 
             _total_loss, _train_step, _current_state, _predictions_series = sess.run(
                 [total_loss, train_step, current_state, predictions_series],
