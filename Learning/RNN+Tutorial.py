@@ -13,7 +13,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 num_epochs = 100
-num_currencies = 5
+num_currencies = 2
 total_examples = 1440*(num_currencies + 1)
 #The number of training examples
 train_num = 1000*(num_currencies + 1)
@@ -136,6 +136,23 @@ def plot(loss_list, predictions_series, batchX, batchY):
     plt.draw()
     plt.pause(0.0001)
 
+def test(x_test, y_test):
+    print("Test Set")
+    batchX_test = x_test
+    batchY_test = y_test
+
+    _current_state = np.zeros((num_layers, 2, batch_size, state_size))
+
+    _current_state, _predictions_series  = sess.run(
+        [ current_state, predictions_series],
+        feed_dict={
+            batchX_placeholder:batchX_test,
+            batchY_placeholder:batchY_test
+        })
+
+    print(predictions_series)
+
+    print("I don't really know what i'm doing")
 
 with tf.Session() as sess:
     sess.run(tf.initialize_all_variables())
@@ -143,7 +160,9 @@ with tf.Session() as sess:
     plt.figure()
     plt.show()
     loss_list = []
+    test_lost = []
     x_train,y_train = generateTrainData()
+    x_test,y_test = generateTestData()
 
     for epoch_idx in range(num_epochs):
 
@@ -171,6 +190,8 @@ with tf.Session() as sess:
             if batch_idx%100 == 0:
                 print("Step",batch_idx, "Loss", _total_loss)
                 plot(loss_list, _predictions_series, batchX, batchY)
+
+        test(x_test, y_test)
 
 plt.ioff()
 plt.show()

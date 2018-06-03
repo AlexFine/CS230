@@ -14,7 +14,7 @@ def get_past_day_price(currency):
 
     return price_vec
 
-#Retrieve top 100 currency's
+#Retrieve top n currency's
 def top_n(n):
     coins = top.get_top_coins('USD', limit = n)
     price_matrix = np.zeros((1441,1))
@@ -44,5 +44,3 @@ def normalize(vec):
     print(vec)"""
 
     return vec
-
-print(normalize(top_n(5)))
