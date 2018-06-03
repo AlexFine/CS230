@@ -73,47 +73,51 @@ def generateTrainData():
 
     return (x, y)
 
-#Create tensors to store batch data
-batchX_placeholder = tf.placeholder(tf.float32, [batch_size, truncated_backprop_length])
-batchY_placeholder = tf.placeholder(tf.int32, [batch_size, truncated_backprop_length])
+def parameters():
+    #Create tensors to store batch data
+    batchX_placeholder = tf.placeholder(tf.float32, [batch_size, truncated_backprop_length])
+    batchY_placeholder = tf.placeholder(tf.int32, [batch_size, truncated_backprop_length])
 
-init_state = tf.placeholder(tf.float32, [num_layers, 2, batch_size, state_size])
-#init_state = tf.placeholder(tf.float32, [num_layers, 1, batch_size, state_size])
+    init_state = tf.placeholder(tf.float32, [num_layers, 2, batch_size, state_size])
 
-state_per_layer_list = tf.unstack(init_state, axis=0)
-rnn_tuple_state = tuple(
-    [tf.nn.rnn_cell.LSTMStateTuple(state_per_layer_list[idx][0], state_per_layer_list[idx][1])
-    for idx in range (num_layers)]
-)
+    return batchX_placeholder, batchY_placeholder, init_state
 
-#Set the weight matrices
-#W = tf.Variable(np.random.randn(state_size+1, state_size), dtype=tf.float32)
-#b = tf.Variable(np.zeros((1,state_size)), dtype=tf.float32)
+def initialize_weights():
+    W2 = tf.Variable(np.random.randn(state_size, num_classes), dtype=tf.float32)
+    b2 = tf.Variable(np.zeros((1,num_classes)), dtype=tf.float32)
 
-W2 = tf.Variable(np.random.randn(state_size, num_classes), dtype=tf.float32)
-b2 = tf.Variable(np.zeros((1,num_classes)), dtype=tf.float32)
+    return W2, b2
 
-#Unpack Columns
-inputs_series = tf.split(axis=1, num_or_size_splits=truncated_backprop_length, value=batchX_placeholder)
-labels_series = tf.unstack(batchY_placeholder, axis=1)
+def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholder):
+    state_per_layer_list = tf.unstack(init_state, axis=0)
+    rnn_tuple_state = tuple(
+        [tf.nn.rnn_cell.LSTMStateTuple(state_per_layer_list[idx][0], state_per_layer_list[idx][1])
+        for idx in range (num_layers)]
+    )
 
-#Forward prop
-stacked_rnn = []
-for _ in range(num_layers):
-    stacked_rnn.append(tf.nn.rnn_cell.LSTMCell(state_size, state_is_tuple=True))
+    #Unpack Columns of input and label series
+    #Split backX data into groups
+    inputs_series = tf.split(axis=1, num_or_size_splits=truncated_backprop_length, value=batchX_placeholder)
+    labels_series = tf.unstack(batchY_placeholder, axis=1)
 
-cell = tf.nn.rnn_cell.MultiRNNCell(stacked_rnn, state_is_tuple=True)
-states_series, current_state = tf.contrib.rnn.static_rnn(cell, inputs_series, initial_state=rnn_tuple_state)
+    #Create an LSTM cell for each layer in our network
+    stacked_rnn = []
+    for _ in range(num_layers):
+        stacked_rnn.append(tf.nn.rnn_cell.LSTMCell(state_size, state_is_tuple=True))
 
-logits_series = [tf.matmul(state, W2) + b2 for state in states_series] #Broadcasted addition
-predictions_series = [tf.nn.softmax(logits) for logits in logits_series]
+    cell = tf.nn.rnn_cell.MultiRNNCell(stacked_rnn, state_is_tuple=True)
+    states_series, current_state = tf.contrib.rnn.static_rnn(cell, inputs_series, initial_state=rnn_tuple_state)
 
-#Calculate losses by calling tensorflow function on cross entropy loss with logits and label
-#losses = [tf.losses.mean_squared_error(label, logits, weights = 1.0, scope=None, loss_collection = tf.GraphKeys.LOSSES) for label, logits in zip (logits_series, labels_series)]
-losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels) for logits, labels in zip(logits_series,labels_series)]
-total_loss = tf.reduce_mean(losses)
+    logits_series = [tf.matmul(state, W2) + b2 for state in states_series] #Broadcasted addition
+    predictions_series = [tf.nn.softmax(logits) for logits in logits_series]
 
-train_step = tf.train.AdagradOptimizer(0.3).minimize(total_loss)
+    return logits_series, labels_series, current_state, predictions_series
+
+def cost(logits_series, labels_series):
+    losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels) for logits, labels in zip(logits_series,labels_series)]
+    total_loss = tf.reduce_mean(losses)
+
+    return total_loss
 
 def plot(loss_list, predictions_series, batchX, batchY):
     plt.subplot(2, 3, 1)
@@ -154,6 +158,16 @@ def test(x_test, y_test):
     print("I don't really know what i'm doing")
 
 def train_model(x_train, x_test, y_train, y_test):
+    batchX_placeholder, batchY_placeholder, init_state = parameters()
+
+    W2, b2 = initialize_weights()
+
+    logits_series, labels_series, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
+
+    total_loss = cost(logits_series, labels_series)
+
+    train_step = tf.train.AdagradOptimizer(0.3).minimize(total_loss)
+
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
         plt.ion()
@@ -166,7 +180,7 @@ def train_model(x_train, x_test, y_train, y_test):
 
             _current_state = np.zeros((num_layers, 2, batch_size, state_size))
 
-            print("New data, epoch", epoch_idx)
+            print("Epoch", epoch_idx)
 
             for batch_idx in range(num_batches):
                 start_idx = batch_idx * truncated_backprop_length
@@ -189,10 +203,10 @@ def train_model(x_train, x_test, y_train, y_test):
                     print("Step",batch_idx, "Loss", _total_loss)
                     plot(loss_list, _predictions_series, batchX, batchY)
 
-
 def main():
     x_train, y_train = generateTrainData()
     x_test, y_test = generateTestData()
+
     train_model(x_train, x_test, y_train, y_test)
 
 main()
