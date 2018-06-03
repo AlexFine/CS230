@@ -24,7 +24,6 @@ num_classes = 2
 echo_step = 1
 batch_size = 5
 num_layers = 3
-
 num_batches = total_series_length//batch_size//truncated_backprop_length
 
 print("num_batches: ", num_batches)
@@ -88,8 +87,8 @@ rnn_tuple_state = tuple(
 )
 
 #Set the weight matrices
-W = tf.Variable(np.random.randn(state_size+1, state_size), dtype=tf.float32)
-b = tf.Variable(np.zeros((1,state_size)), dtype=tf.float32)
+#W = tf.Variable(np.random.randn(state_size+1, state_size), dtype=tf.float32)
+#b = tf.Variable(np.zeros((1,state_size)), dtype=tf.float32)
 
 W2 = tf.Variable(np.random.randn(state_size, num_classes), dtype=tf.float32)
 b2 = tf.Variable(np.zeros((1,num_classes)), dtype=tf.float32)
@@ -154,44 +153,49 @@ def test(x_test, y_test):
 
     print("I don't really know what i'm doing")
 
-with tf.Session() as sess:
-    sess.run(tf.initialize_all_variables())
-    plt.ion()
-    plt.figure()
-    plt.show()
-    loss_list = []
-    test_lost = []
-    x_train,y_train = generateTrainData()
-    x_test,y_test = generateTestData()
+def train_model(x_train, x_test, y_train, y_test):
+    with tf.Session() as sess:
+        sess.run(tf.initialize_all_variables())
+        plt.ion()
+        plt.figure()
+        plt.show()
+        loss_list = []
+        test_lost = []
 
-    for epoch_idx in range(num_epochs):
+        for epoch_idx in range(num_epochs):
 
-        _current_state = np.zeros((num_layers, 2, batch_size, state_size))
+            _current_state = np.zeros((num_layers, 2, batch_size, state_size))
 
-        print("New data, epoch", epoch_idx)
+            print("New data, epoch", epoch_idx)
 
-        for batch_idx in range(num_batches):
-            start_idx = batch_idx * truncated_backprop_length
-            end_idx = start_idx + truncated_backprop_length
+            for batch_idx in range(num_batches):
+                start_idx = batch_idx * truncated_backprop_length
+                end_idx = start_idx + truncated_backprop_length
 
-            batchX = x_train[:,start_idx:end_idx]
-            batchY = y_train[:,start_idx:end_idx]
+                batchX = x_train[:,start_idx:end_idx]
+                batchY = y_train[:,start_idx:end_idx]
 
-            _total_loss, _train_step, _current_state, _predictions_series = sess.run(
-                [total_loss, train_step, current_state, predictions_series],
-                feed_dict={
-                    batchX_placeholder:batchX,
-                    batchY_placeholder:batchY,
-                    init_state:_current_state,
-                })
+                _total_loss, _train_step, _current_state, _predictions_series = sess.run(
+                    [total_loss, train_step, current_state, predictions_series],
+                    feed_dict={
+                        batchX_placeholder:batchX,
+                        batchY_placeholder:batchY,
+                        init_state:_current_state,
+                    })
 
-            loss_list.append(_total_loss)
+                loss_list.append(_total_loss)
 
-            if batch_idx%100 == 0:
-                print("Step",batch_idx, "Loss", _total_loss)
-                plot(loss_list, _predictions_series, batchX, batchY)
+                if batch_idx%100 == 0:
+                    print("Step",batch_idx, "Loss", _total_loss)
+                    plot(loss_list, _predictions_series, batchX, batchY)
 
-        test(x_test, y_test)
+
+def main():
+    x_train, y_train = generateTrainData()
+    x_test, y_test = generateTestData()
+    train_model(x_train, x_test, y_train, y_test)
+
+main()
 
 plt.ioff()
 plt.show()
