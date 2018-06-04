@@ -166,6 +166,12 @@ def train_model(x_train, x_test, y_train, y_test):
 
     logits_series, labels_series, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
+    #Calculate accuracy
+    #correct_prediction = tf.equal(tf.argmax(batchY,  1), tf.argmax(_predictions_series, 1))
+    #accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+
+    #print(predictions_series)
+
     #accuracy = tf.metrics.accuracy(labels = tf.argmax(labels_series, 1), predictions = tf.argmax(logits_series, 1))
 
     total_loss = cost(logits_series, labels_series)
@@ -173,7 +179,7 @@ def train_model(x_train, x_test, y_train, y_test):
     train_step = tf.train.AdagradOptimizer(learning_rate).minimize(total_loss)
 
     with tf.Session() as sess:
-        sess.run(tf.initialize_all_variables())
+        sess.run(tf.global_variables_initializer())
         plt.ion()
         plt.figure()
         plt.show()
@@ -202,11 +208,12 @@ def train_model(x_train, x_test, y_train, y_test):
                         init_state:_current_state,
                     })
 
-                loss_list.append(_total_loss)
-
                 if batch_idx%100 == 0:
+                    loss_list.append(_total_loss)
                     print("Step",batch_idx, "Loss", _total_loss)
                     plot(loss_list, _predictions_series, batchX, batchY)
+
+
 
 def main():
     x_train, y_train = generateTrainData()
