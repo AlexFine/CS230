@@ -12,20 +12,24 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-num_epochs = 100
+num_epochs = 1000
 num_currencies = 100
-total_examples = 1440*(num_currencies + 1)
-#The number of training examples
-train_num = 1000*(num_currencies + 1)
-total_series_length = total_examples - train_num
+data_len = 1440
+train_len = 1000
 truncated_backprop_length = 15
 state_size = 4
 num_classes = 2
 echo_step = 1
-batch_size = 5
+batch_size = 2
 num_layers = 3
 learning_rate = 0.3
+
+total_examples = data_len*(num_currencies + 1)
+#The number of training examples
+train_num = train_len*(num_currencies + 1)
+total_series_length = train_num
 num_batches = total_series_length//batch_size//truncated_backprop_length
+
 
 print("num_batches: ", num_batches)
 
@@ -33,10 +37,12 @@ def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
     x = read_data("normalized_data/minute_day/")
-    x = x[train_num:total_examples, :]
+    x = x[train_len:data_len, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
     y = np.roll(x, echo_step)
+    y[y > 0] = 1
+    y[y < 0] = 0
     #Reset data that is extra to zero instead of just removing it from the x vector
     y[:, 0:echo_step] = 0
 
@@ -54,7 +60,7 @@ def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
     x = read_data("normalized_data/minute_day/")
-    x = x[0:train_num, :]
+    x = x[0:train_len, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
 
@@ -121,12 +127,13 @@ def cost(logits_series, labels_series):
 
     return total_loss
 
-def plot(loss_list, predictions_series, batchX, batchY):
-    plt.subplot(2, 3, 1)
+def plot(loss_list, predictions_series, batchX, batchY, accuracy_list):
+    #plt.subplot(2, 3, 1)
     plt.cla()
     plt.plot(loss_list)
+    plt.plot(accuracy_list)
 
-    for batch_series_idx in range(5):
+    """for batch_series_idx in range(5):
         one_hot_output_series = np.array(predictions_series)[:, batch_series_idx, :]
         single_output_series = np.array([(1 if out[0] < 0.5 else 0) for out in one_hot_output_series])
 
@@ -136,7 +143,7 @@ def plot(loss_list, predictions_series, batchX, batchY):
         left_offset = range(truncated_backprop_length)
         plt.bar(left_offset, batchX[batch_series_idx, :], width=1, color="blue")
         plt.bar(left_offset, batchY[batch_series_idx, :] * 0.5, width=1, color="red")
-        plt.bar(left_offset, single_output_series * 0.3, width=1, color="green")
+        plt.bar(left_offset, single_output_series * 0.3, width=1, color="green")"""
 
     plt.draw()
     plt.pause(0.0001)
@@ -167,8 +174,8 @@ def train_model(x_train, x_test, y_train, y_test):
     logits_series, labels_series, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
     #Calculate accuracy
-    #correct_prediction = tf.equal(tf.argmax(batchY,  1), tf.argmax(_predictions_series, 1))
-    #accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
+    correct_prediction = [tf.equal(tf.argmax(logits,  axis=0), tf.argmax(labels, axis=0)) for logits, labels in zip(predictions_series,labels_series)]
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
 
     #print(predictions_series)
 
@@ -176,7 +183,7 @@ def train_model(x_train, x_test, y_train, y_test):
 
     total_loss = cost(logits_series, labels_series)
 
-    train_step = tf.train.AdagradOptimizer(learning_rate).minimize(total_loss)
+    train_step = tf.train.AdamOptimizer().minimize(total_loss)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
@@ -184,8 +191,9 @@ def train_model(x_train, x_test, y_train, y_test):
         plt.figure()
         plt.show()
         loss_list = []
+        accuracy_list = []
         test_lost = []
-        tf.Print(W2, [W2], "TF Object W2: ")
+        avg_accuracy = []
 
         for epoch_idx in range(num_epochs):
 
@@ -200,24 +208,41 @@ def train_model(x_train, x_test, y_train, y_test):
                 batchX = x_train[:,start_idx:end_idx]
                 batchY = y_train[:,start_idx:end_idx]
 
-                _total_loss, _train_step, _current_state, _predictions_series = sess.run(
-                    [total_loss, train_step, current_state, predictions_series],
+                _total_loss, _train_step, _current_state, _predictions_series, _accuracy = sess.run(
+                    [total_loss, train_step, current_state, predictions_series, accuracy],
                     feed_dict={
                         batchX_placeholder:batchX,
                         batchY_placeholder:batchY,
-                        init_state:_current_state,
+                        init_state:_current_state
                     })
 
+                avg_accuracy.append(_accuracy)
+                accuracy_list.append(_accuracy)
+                loss_list.append(_total_loss)
+
                 if batch_idx%100 == 0:
-                    loss_list.append(_total_loss)
                     print("Step",batch_idx, "Loss", _total_loss)
-                    plot(loss_list, _predictions_series, batchX, batchY)
+                    print("Accuracy: ", (np.sum(avg_accuracy)/len(avg_accuracy))*100, "%")
+                    plot(loss_list, _predictions_series, batchX, batchY, accuracy_list)
 
+            avg_accuracy = []
 
+def guess(y_train, y_test):
+    y_train = y_train.flatten()
+    accuracy_train = np.sum(y_train)/len(y_train)
+    print("Random Guessing Accuracy On Training: ", accuracy_train*100, "%")
+
+    y_test = y_test.flatten()
+    accuracy_test = np.sum(y_test)/len(y_test)
+    print("Random Guessing Accuracy On Testing: ", accuracy_test*100, "%")
+
+    return 0
 
 def main():
     x_train, y_train = generateTrainData()
     x_test, y_test = generateTestData()
+
+    guess(y_train, y_test)
 
     train_model(x_train, x_test, y_train, y_test)
 
