@@ -7,13 +7,13 @@ Algorithm amendments:
 """
 
 from __future__ import print_function, division
-from generate_crypto_data import normalize, top_n, get_past_day_price
+from generate_crypto_data import read_data
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
 num_epochs = 100
-num_currencies = 10
+num_currencies = 100
 total_examples = 1440*(num_currencies + 1)
 #The number of training examples
 train_num = 1000*(num_currencies + 1)
@@ -32,7 +32,7 @@ print("num_batches: ", num_batches)
 def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = normalize(top_n(num_currencies))
+    x = read_data("normalized_data/minute_day/")
     x = x[train_num:total_examples, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
@@ -53,7 +53,7 @@ def generateTestData():
 def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = normalize(top_n(num_currencies))
+    x = read_data("normalized_data/minute_day/")
     x = x[0:train_num, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
