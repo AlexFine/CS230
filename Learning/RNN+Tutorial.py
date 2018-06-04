@@ -20,7 +20,7 @@ truncated_backprop_length = 15
 state_size = 4
 num_classes = 2
 echo_step = 1
-batch_size = 2
+batch_size = 6
 num_layers = 3
 learning_rate = 0.3
 
@@ -29,7 +29,6 @@ total_examples = data_len*(num_currencies + 1)
 train_num = train_len*(num_currencies + 1)
 total_series_length = train_num
 num_batches = total_series_length//batch_size//truncated_backprop_length
-
 
 print("num_batches: ", num_batches)
 
@@ -105,6 +104,7 @@ def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholde
 
     #Unpack Columns of input and label series
     #Split backX data into groups
+    #Remove these lines
     inputs_series = tf.split(axis=1, num_or_size_splits=truncated_backprop_length, value=batchX_placeholder)
     labels_series = tf.unstack(batchY_placeholder, axis=1)
 
@@ -174,7 +174,7 @@ def train_model(x_train, x_test, y_train, y_test):
     logits_series, labels_series, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
     #Calculate accuracy
-    correct_prediction = [tf.equal(tf.argmax(logits,  axis=0), tf.argmax(labels, axis=0)) for logits, labels in zip(predictions_series,labels_series)]
+    correct_prediction = [tf.equal(tf.argmax(logits,  axis=1), tf.argmax(labels, axis=0)) for logits, labels in zip(predictions_series,labels_series)]
     accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
 
     #print(predictions_series)
@@ -217,10 +217,11 @@ def train_model(x_train, x_test, y_train, y_test):
                     })
 
                 avg_accuracy.append(_accuracy)
-                accuracy_list.append(_accuracy)
-                loss_list.append(_total_loss)
+
 
                 if batch_idx%100 == 0:
+                    accuracy_list.append(_accuracy)
+                    loss_list.append(_total_loss)
                     print("Step",batch_idx, "Loss", _total_loss)
                     print("Accuracy: ", (np.sum(avg_accuracy)/len(avg_accuracy))*100, "%")
                     plot(loss_list, _predictions_series, batchX, batchY, accuracy_list)
