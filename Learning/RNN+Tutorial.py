@@ -13,7 +13,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 num_epochs = 100
-num_currencies = 2
+num_currencies = 10
 total_examples = 1440*(num_currencies + 1)
 #The number of training examples
 train_num = 1000*(num_currencies + 1)
@@ -24,6 +24,7 @@ num_classes = 2
 echo_step = 1
 batch_size = 5
 num_layers = 3
+learning_rate = 0.3
 num_batches = total_series_length//batch_size//truncated_backprop_length
 
 print("num_batches: ", num_batches)
@@ -166,7 +167,7 @@ def train_model(x_train, x_test, y_train, y_test):
 
     total_loss = cost(logits_series, labels_series)
 
-    train_step = tf.train.AdagradOptimizer(0.3).minimize(total_loss)
+    train_step = tf.train.AdagradOptimizer(learning_rate).minimize(total_loss)
 
     with tf.Session() as sess:
         sess.run(tf.initialize_all_variables())
