@@ -105,8 +105,8 @@ def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholde
     #Unpack Columns of input and label series
     #Split backX data into groups
     #Remove these lines
-    inputs_series = tf.split(axis=1, num_or_size_splits=truncated_backprop_length, value=batchX_placeholder)
-    labels_series = tf.unstack(batchY_placeholder, axis=1)
+    #inputs_series = tf.split(axis=1, num_or_size_splits=truncated_backprop_length, value=batchX_placeholder)
+    #labels_series = tf.unstack(batchY_placeholder, axis=1)
 
     #Create an LSTM cell for each layer in our network
     stacked_rnn = []
@@ -114,15 +114,27 @@ def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholde
         stacked_rnn.append(tf.nn.rnn_cell.LSTMCell(state_size, state_is_tuple=True))
 
     cell = tf.nn.rnn_cell.MultiRNNCell(stacked_rnn, state_is_tuple=True)
-    states_series, current_state = tf.contrib.rnn.static_rnn(cell, inputs_series, initial_state=rnn_tuple_state)
+    #NEW
+    states_series, current_state = tf.nn.dynamic_rnn(cell, tf.expand_dims(batchX_placeholder, -1), initial_state=rnn_tuple_state)
+    states_series = tf.reshape(states_series, [-1, state_size])
 
-    logits_series = [tf.matmul(state, W2) + b2 for state in states_series] #Broadcasted addition
-    predictions_series = [tf.nn.softmax(logits) for logits in logits_series]
+    logits = tf.matmul(states_series, W2) + b2 #Broadcasted addition
+    labels = tf.reshape(batchY_placeholder, [-1])
 
-    return logits_series, labels_series, current_state, predictions_series
+    logits_series = tf.unstack(tf.reshape(logits, [batch_size, truncated_backprop_length, num_classes]), axis=1)
+    predictions_series = [tf.nn.softmax(logit) for logit in logits_series]
 
-def cost(logits_series, labels_series):
-    losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels) for logits, labels in zip(logits_series,labels_series)]
+    #states_series, current_state = tf.contrib.rnn.static_rnn(cell, inputs_series, initial_state=rnn_tuple_state)
+
+    #logits_series = [tf.matmul(state, W2) + b2 for state in states_series] #Broadcasted addition
+    #predictions_series = [tf.nn.softmax(logits) for logits in logits_series]
+
+    return logits, labels, current_state, predictions_series
+
+def cost(logits, labels):
+    #losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels) for logits, labels in zip(logits_series,labels_series)]
+    #total_loss = tf.reduce_mean(losses)
+    losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels)
     total_loss = tf.reduce_mean(losses)
 
     return total_loss
@@ -171,17 +183,17 @@ def train_model(x_train, x_test, y_train, y_test):
 
     W2, b2 = initialize_weights()
 
-    logits_series, labels_series, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
+    logits, labels, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
     #Calculate accuracy
-    correct_prediction = [tf.equal(tf.argmax(logits,  axis=1), tf.argmax(labels, axis=0)) for logits, labels in zip(predictions_series,labels_series)]
+    correct_prediction = tf.equal(tf.argmax(logits,  axis=0), tf.argmax(labels, axis=0))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
 
     #print(predictions_series)
 
     #accuracy = tf.metrics.accuracy(labels = tf.argmax(labels_series, 1), predictions = tf.argmax(logits_series, 1))
 
-    total_loss = cost(logits_series, labels_series)
+    total_loss = cost(logits, labels)
 
     train_step = tf.train.AdamOptimizer().minimize(total_loss)
 
