@@ -17,7 +17,6 @@ def read_data(dir):
     price_vec = []
     price_matrix = np.zeros((1440,1))
     currency_list = read(dir)
-    print (currency_list)
 
     #Loop through each file name in directory
     for currency in currency_list:
@@ -28,10 +27,8 @@ def read_data(dir):
             #Loop through file data
             for row in data:
                 #Append to output vector
-                #print(row[1])
                 if count > 0:
                     price_vec.append(float(row[1]))
-                    #print(row[1])
                 count += 1
 
         price_vec = price_vec[0:1440]

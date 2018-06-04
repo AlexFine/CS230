@@ -86,6 +86,7 @@ def parameters():
 def initialize_weights():
     W2 = tf.Variable(np.random.randn(state_size, num_classes), dtype=tf.float32)
     b2 = tf.Variable(np.zeros((1,num_classes)), dtype=tf.float32)
+    #W2 = tf.Print(W2, [W2], "W2 Tensor")
 
     return W2, b2
 
@@ -165,6 +166,8 @@ def train_model(x_train, x_test, y_train, y_test):
 
     logits_series, labels_series, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
+    #accuracy = tf.metrics.accuracy(labels = tf.argmax(labels_series, 1), predictions = tf.argmax(logits_series, 1))
+
     total_loss = cost(logits_series, labels_series)
 
     train_step = tf.train.AdagradOptimizer(learning_rate).minimize(total_loss)
@@ -176,6 +179,7 @@ def train_model(x_train, x_test, y_train, y_test):
         plt.show()
         loss_list = []
         test_lost = []
+        tf.Print(W2, [W2], "TF Object W2: ")
 
         for epoch_idx in range(num_epochs):
 
