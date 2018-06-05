@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 num_epochs = 1000
 num_currencies = 100
 data_len = 2000
-train_len = 1900
+train_len = 1600
 truncated_backprop_length = 30
 state_size = 4
 num_classes = 2
@@ -39,7 +39,7 @@ print("num_batches: ", num_batches)
 def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = read_data("normalized_data/")
+    x = read_data("normalized_2k_min_data/06-05/")
     x = x[train_len:data_len, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
@@ -62,7 +62,7 @@ def generateTestData():
 def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = read_data("normalized_data/")
+    x = read_data("normalized_2k_min_data/06-05/")
     x = x[0:train_len, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector

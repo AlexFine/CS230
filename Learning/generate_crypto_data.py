@@ -40,7 +40,7 @@ def read_data(dir):
 
 #Retrieve a dictionary of vector of prices & time for the last day
 def get_past_day_price(currency):
-    data = price.get_historical_data(currency, 'USD', 'minute', aggregate=1, limit=(1440))
+    data = price.get_historical_data(currency, 'USD', 'minute', aggregate=1, limit=(2001))
     price_vec = []
     time_vec = []
     data_dictionary = {"time": time_vec, "price": price_vec}
@@ -92,14 +92,14 @@ def store_top_n(n):
         count += 1
         print(count)
         #Currently we're normalizing the data before we store it
-        download_dir = "normalized_data/" + i["SYMBOL"] + ".csv"
+        download_dir = "normalized_2k_min_data/06-05/" + i["SYMBOL"] + ".csv"
         #Open directory
         csv = open(download_dir, "w")
         #Write the header
         columnTitleRow = "time, price\n"
         csv.write(columnTitleRow)
         #Get the data to add
-        data = get_past_hour_price(i["SYMBOL"])
+        data = get_past_day_price(i["SYMBOL"])
         price = normalize(data["price"]) #Normalize Prices
         time = data["time"]
 
@@ -113,9 +113,11 @@ def store_top_n(n):
 #Normalizes vector values to between zero and one
 def normalize(vec):
     vec = vec[1:]
-    vec = np.diff(vec)
-    max_val = np.amax(vec)
-    vec = vec/max_val
+    diff_vec = np.diff(vec)
+    out = np.divide(diff_vec, vec[1:], out=np.zeros_like(diff_vec), where=vec[1:]!=0) * 100
+    #vec = diff_vec/vec[1:]
+    #max_val = np.amax(vec)
+    #vec = vec/max_val
     """
     For non-binary training uncomment the following lines
     average = np.average(vec)
@@ -125,4 +127,4 @@ def normalize(vec):
     vec = vec/max_val
     print(vec)"""
 
-    return vec
+    return out
