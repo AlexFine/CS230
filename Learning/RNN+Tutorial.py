@@ -198,7 +198,7 @@ def train_model(x_train, x_test, y_train, y_test):
     logits, labels, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
     #Calculate accuracy
-    correct_prediction = tf.equal(tf.argmax(logits,  axis=1), tf.argmax(labels))
+    correct_prediction = tf.equal(tf.argmax(logits,  axis=1), tf.cast(labels, tf.int64))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
 
     #print(predictions_series)
@@ -218,6 +218,7 @@ def train_model(x_train, x_test, y_train, y_test):
         accuracy_list = []
         avg_accuracy = []
         test_loss = []
+        test_accuracy = []
 
         for epoch_idx in range(num_epochs):
 
@@ -257,8 +258,8 @@ def train_model(x_train, x_test, y_train, y_test):
                 batchX = x_test[:,start_idx:end_idx]
                 batchY = y_test[:,start_idx:end_idx]
 
-                _test_loss = sess.run(
-                    [total_loss],
+                _test_loss, _accuracy = sess.run(
+                    [total_loss, accuracy],
                     feed_dict={
                         batchX_placeholder:batchX,
                         batchY_placeholder:batchY,
@@ -266,8 +267,10 @@ def train_model(x_train, x_test, y_train, y_test):
                     })
 
                 test_loss.append(_test_loss)
+                test_accuracy.append(_accuracy)
 
             print("Test Loss: ", np.sum(test_loss)/len(test_loss))
+            print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")
 
             avg_accuracy = []
 
