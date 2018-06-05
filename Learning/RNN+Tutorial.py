@@ -14,9 +14,9 @@ import matplotlib.pyplot as plt
 
 num_epochs = 1000
 num_currencies = 100
-data_len = 1440
-train_len = 1000
-truncated_backprop_length = 15
+data_len = 2000
+train_len = 1900
+truncated_backprop_length = 30
 state_size = 4
 num_classes = 2
 echo_step = 1
@@ -30,12 +30,16 @@ train_num = train_len*(num_currencies + 1)
 total_series_length = train_num
 num_batches = total_series_length//batch_size//truncated_backprop_length
 
+test_num = (data_len - train_len)*(num_currencies + 1)
+total_test_series_length = test_num
+num_test_batches = total_test_series_length//batch_size//truncated_backprop_length
+
 print("num_batches: ", num_batches)
 
 def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = read_data("normalized_data/minute_day/")
+    x = read_data("normalized_data/")
     x = x[train_len:data_len, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
@@ -58,7 +62,7 @@ def generateTestData():
 def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = read_data("normalized_data/minute_day/")
+    x = read_data("normalized_data/")
     x = x[0:train_len, :]
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
@@ -91,7 +95,7 @@ def parameters():
 def initialize_weights():
     W2 = tf.Variable(np.random.randn(state_size, num_classes), dtype=tf.float32)
     b2 = tf.Variable(np.zeros((1,num_classes)), dtype=tf.float32)
-    #W2 = tf.Print(W2, [W2], "W2 Tensor")
+    #b2 = tf.Print(b2, [b2], "b2 Tensor")
 
     return W2, b2
 
@@ -118,22 +122,21 @@ def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholde
     states_series, current_state = tf.nn.dynamic_rnn(cell, tf.expand_dims(batchX_placeholder, -1), initial_state=rnn_tuple_state)
     states_series = tf.reshape(states_series, [-1, state_size])
 
+    #Logits shape [batch_size*truncated_backprop_length, num_classes]
     logits = tf.matmul(states_series, W2) + b2 #Broadcasted addition
+    #Labels shape [batch_size*truncated_backprop_length]
     labels = tf.reshape(batchY_placeholder, [-1])
 
+    #This code, and the prediction series, are really just for graphing
+    #The cost function does the softmax automatically
     logits_series = tf.unstack(tf.reshape(logits, [batch_size, truncated_backprop_length, num_classes]), axis=1)
     predictions_series = [tf.nn.softmax(logit) for logit in logits_series]
 
-    #states_series, current_state = tf.contrib.rnn.static_rnn(cell, inputs_series, initial_state=rnn_tuple_state)
-
-    #logits_series = [tf.matmul(state, W2) + b2 for state in states_series] #Broadcasted addition
-    #predictions_series = [tf.nn.softmax(logits) for logits in logits_series]
+    #predictions_series = tf.Print(predictions_series, [predictions_series], "Predictions")
 
     return logits, labels, current_state, predictions_series
 
 def cost(logits, labels):
-    #losses = [tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels) for logits, labels in zip(logits_series,labels_series)]
-    #total_loss = tf.reduce_mean(losses)
     losses = tf.nn.sparse_softmax_cross_entropy_with_logits(logits = logits, labels = labels)
     total_loss = tf.reduce_mean(losses)
 
@@ -160,23 +163,32 @@ def plot(loss_list, predictions_series, batchX, batchY, accuracy_list):
     plt.draw()
     plt.pause(0.0001)
 
-def test(x_test, y_test):
-    print("Test Set")
-    batchX_test = x_test
-    batchY_test = y_test
+def test(x_test, y_test, total_loss, current_state, predictions_series, accuracy, batchX_placeholder, batchY_placeholder, init_state):
+    with tf.Session() as sess:
+        test_loss = []
+        accuracy_net = []
+        _current_state = np.zeros((num_layers, 2, batch_size, state_size))
 
-    _current_state = np.zeros((num_layers, 2, batch_size, state_size))
+        for batch_idx in range(num_test_batches):
+            start_idx = batch_idx * truncated_backprop_length
+            end_idx = start_idx + truncated_backprop_length
 
-    _current_state, _predictions_series  = sess.run(
-        [ current_state, predictions_series],
-        feed_dict={
-            batchX_placeholder:batchX_test,
-            batchY_placeholder:batchY_test
-        })
+            batchX = x_test[:,start_idx:end_idx]
+            batchY = y_test[:,start_idx:end_idx]
 
-    print(predictions_series)
+            _total_loss, _current_state, _predictions_series, _accuracy = sess.run(
+                [total_loss, current_state, predictions_series, accuracy],
+                feed_dict={
+                    batchX_placeholder:batchX,
+                    batchY_placeholder:batchY,
+                    init_state:_current_state
+                })
 
-    print("I don't really know what i'm doing")
+            test_loss.append(_total_loss)
+            accuracy_net.append(_accuracy)
+
+        print("Loss", np.sum(test_loss)/len(test_loss))
+        print("Accuracy: ", np.sum(accuracy_net)/len(accuracy_net))
 
 def train_model(x_train, x_test, y_train, y_test):
     batchX_placeholder, batchY_placeholder, init_state = parameters()
@@ -186,12 +198,12 @@ def train_model(x_train, x_test, y_train, y_test):
     logits, labels, current_state, predictions_series = lstm_forward_prop(W2, b2, init_state, batchX_placeholder, batchY_placeholder)
 
     #Calculate accuracy
-    correct_prediction = tf.equal(tf.argmax(logits,  axis=0), tf.argmax(labels, axis=0))
+    correct_prediction = tf.equal(tf.argmax(logits,  axis=1), tf.argmax(labels))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
 
     #print(predictions_series)
 
-    #accuracy = tf.metrics.accuracy(labels = tf.argmax(labels_series, 1), predictions = tf.argmax(logits_series, 1))
+    #accuracy = tf.metrics.accuracy(labels = labels, predictions = tf.argmax(predictions_series, axis = 1))
 
     total_loss = cost(logits, labels)
 
@@ -204,8 +216,8 @@ def train_model(x_train, x_test, y_train, y_test):
         plt.show()
         loss_list = []
         accuracy_list = []
-        test_lost = []
         avg_accuracy = []
+        test_loss = []
 
         for epoch_idx in range(num_epochs):
 
@@ -230,24 +242,45 @@ def train_model(x_train, x_test, y_train, y_test):
 
                 avg_accuracy.append(_accuracy)
 
-
                 if batch_idx%100 == 0:
                     accuracy_list.append(_accuracy)
                     loss_list.append(_total_loss)
                     print("Step",batch_idx, "Loss", _total_loss)
-                    print("Accuracy: ", (np.sum(avg_accuracy)/len(avg_accuracy))*100, "%")
+                    print("Accuracy: ", _accuracy*100, "%")
                     plot(loss_list, _predictions_series, batchX, batchY, accuracy_list)
+
+
+            for batch_idx in range(num_test_batches):
+                start_idx = batch_idx * truncated_backprop_length
+                end_idx = start_idx + truncated_backprop_length
+
+                batchX = x_test[:,start_idx:end_idx]
+                batchY = y_test[:,start_idx:end_idx]
+
+                _test_loss = sess.run(
+                    [total_loss],
+                    feed_dict={
+                        batchX_placeholder:batchX,
+                        batchY_placeholder:batchY,
+                        init_state:_current_state
+                    })
+
+                test_loss.append(_test_loss)
+
+            print("Test Loss: ", np.sum(test_loss)/len(test_loss))
 
             avg_accuracy = []
 
-def guess(y_train, y_test):
+def guess(x_train, x_test, y_train, y_test):
     y_train = y_train.flatten()
     accuracy_train = np.sum(y_train)/len(y_train)
-    print("Random Guessing Accuracy On Training: ", accuracy_train*100, "%")
+    print("Random 1 Hour Guessing Accuracy On Training: ", accuracy_train*100, "%")
 
     y_test = y_test.flatten()
     accuracy_test = np.sum(y_test)/len(y_test)
-    print("Random Guessing Accuracy On Testing: ", accuracy_test*100, "%")
+    print("Random 1 Hour Guessing Accuracy On Testing: ", accuracy_test*100, "%")
+    print(len(y_train))
+    print(len(y_test))
 
     return 0
 
@@ -255,7 +288,7 @@ def main():
     x_train, y_train = generateTrainData()
     x_test, y_test = generateTestData()
 
-    guess(y_train, y_test)
+    guess(x_train, x_test, y_train, y_test)
 
     train_model(x_train, x_test, y_train, y_test)
 

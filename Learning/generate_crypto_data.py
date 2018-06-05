@@ -15,7 +15,7 @@ def read(dir):
 def read_data(dir):
     count = 0
     price_vec = []
-    price_matrix = np.zeros((1440,1))
+    price_matrix = np.zeros((1999,1))
     currency_list = read(dir)
 
     #Loop through each file name in directory
@@ -31,7 +31,7 @@ def read_data(dir):
                     price_vec.append(float(row[1]))
                 count += 1
 
-        price_vec = price_vec[0:1440]
+        price_vec = price_vec[0:1999]
         price_matrix = np.c_[price_matrix, price_vec]
         price_vec = []
         count = 0
@@ -41,6 +41,20 @@ def read_data(dir):
 #Retrieve a dictionary of vector of prices & time for the last day
 def get_past_day_price(currency):
     data = price.get_historical_data(currency, 'USD', 'minute', aggregate=1, limit=(1440))
+    price_vec = []
+    time_vec = []
+    data_dictionary = {"time": time_vec, "price": price_vec}
+
+    for idx in data:
+        price_vec.append(idx["close"])
+        time_vec.append(idx["time"])
+        #print("Time: ", idx["time"], "Close: ", idx["close"])
+
+    return data_dictionary
+
+#Retrieve a dictionary of vector of prices & time for the last 500 day per hour
+def get_past_hour_price(currency):
+    data = price.get_historical_data(currency, 'USD', 'hour', aggregate=1, limit=(500*24))
     price_vec = []
     time_vec = []
     data_dictionary = {"time": time_vec, "price": price_vec}
@@ -78,14 +92,14 @@ def store_top_n(n):
         count += 1
         print(count)
         #Currently we're normalizing the data before we store it
-        download_dir = "normalized_data/minute_day/" + i["SYMBOL"] + ".csv"
+        download_dir = "normalized_data/" + i["SYMBOL"] + ".csv"
         #Open directory
         csv = open(download_dir, "w")
         #Write the header
         columnTitleRow = "time, price\n"
         csv.write(columnTitleRow)
         #Get the data to add
-        data = get_past_day_price(i["SYMBOL"])
+        data = get_past_hour_price(i["SYMBOL"])
         price = normalize(data["price"]) #Normalize Prices
         time = data["time"]
 
@@ -98,7 +112,7 @@ def store_top_n(n):
 
 #Normalizes vector values to between zero and one
 def normalize(vec):
-    #vec = vec[:, 1:]
+    vec = vec[1:]
     vec = np.diff(vec)
     max_val = np.amax(vec)
     vec = vec/max_val
