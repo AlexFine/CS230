@@ -21,6 +21,8 @@ Pre Running this algorithm:
 2. Have algorithm able to predict for a single unit
 #Predict the final prediction in the series
 
+Break RNN's into RNN for training, and RNN for testing performance on a specific currency
+
 We then need the algorithm to run every minute. Every minute the following occurs:
 
 1. Append time vector
@@ -30,3 +32,8 @@ We then need the algorithm to run every minute. Every minute the following occur
 5. Multiply change array by price array to get price change
 6. Compare predicted change vs. market performance
 """
+
+"""Seperately, I need to create the algorithm to concatinate data blocks of
+currencies by time. To do this we need two algorithms:
+1. Append data blocks by time and add them to each other correctly
+2. Run every day"""

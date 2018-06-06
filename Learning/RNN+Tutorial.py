@@ -209,8 +209,12 @@ def train_model(x_train, x_test, y_train, y_test):
 
     train_step = tf.train.AdamOptimizer().minimize(total_loss)
 
+    saver = tf.train.Saver()
+
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
+        #sess.run(tf.global_variables_initializer())
+        saver.restore(sess, "models/98/model.ckpt")
+
         plt.ion()
         plt.figure()
         plt.show()
@@ -271,6 +275,10 @@ def train_model(x_train, x_test, y_train, y_test):
 
             print("Test Loss: ", np.sum(test_loss)/len(test_loss))
             print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")
+
+            path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
+            save_path = saver.save(sess, path_name)
+            print("Model saved in file: %s" % save_path)
 
             avg_accuracy = []
 
