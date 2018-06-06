@@ -163,33 +163,6 @@ def plot(loss_list, predictions_series, batchX, batchY, accuracy_list):
     plt.draw()
     plt.pause(0.0001)
 
-def test(x_test, y_test, total_loss, current_state, predictions_series, accuracy, batchX_placeholder, batchY_placeholder, init_state):
-    with tf.Session() as sess:
-        test_loss = []
-        accuracy_net = []
-        _current_state = np.zeros((num_layers, 2, batch_size, state_size))
-
-        for batch_idx in range(num_test_batches):
-            start_idx = batch_idx * truncated_backprop_length
-            end_idx = start_idx + truncated_backprop_length
-
-            batchX = x_test[:,start_idx:end_idx]
-            batchY = y_test[:,start_idx:end_idx]
-
-            _total_loss, _current_state, _predictions_series, _accuracy = sess.run(
-                [total_loss, current_state, predictions_series, accuracy],
-                feed_dict={
-                    batchX_placeholder:batchX,
-                    batchY_placeholder:batchY,
-                    init_state:_current_state
-                })
-
-            test_loss.append(_total_loss)
-            accuracy_net.append(_accuracy)
-
-        print("Loss", np.sum(test_loss)/len(test_loss))
-        print("Accuracy: ", np.sum(accuracy_net)/len(accuracy_net))
-
 def train_model(x_train, x_test, y_train, y_test):
     batchX_placeholder, batchY_placeholder, init_state = parameters()
 
