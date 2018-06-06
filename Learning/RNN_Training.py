@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 num_epochs = 1000
 num_currencies = 100
 data_len = 2000
-train_len = 1600
+train_len = 1800
 truncated_backprop_length = 30
 state_size = 4
 num_classes = 2
