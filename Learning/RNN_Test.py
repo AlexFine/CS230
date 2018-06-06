@@ -42,16 +42,12 @@ def generateTestData():
     x = read_data("normalized_2k_min_data/06-05/")
     x = x[train_len:data_len, :]
 
-    #Set Y output vector
-    y = x[1:, :]
-    zero = np.zeros((1, len(x[1])))
-    zero = zero.astype(float)
-    y = np.vstack((y, zero))
-
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
-    #y = np.roll(x, echo_step)
+    y = np.roll(x, -echo_step)
     y[y > 0] = 1
     y[y < 0] = 0
+    #Reset data that is extra to zero instead of just removing it from the x vector
+    y[:, 0:echo_step] = 0
 
     #Flatten into vector
     x = x.flatten()
@@ -69,16 +65,13 @@ def generateTrainData():
     x = read_data("normalized_2k_min_data/06-05/")
     x = x[0:train_len, :]
 
-    #Set Y output vector
-    y = x[1:, :]
-    zero = np.zeros((1, len(x[1])))
-    zero = zero.astype(float)
-    y = np.vstack((y, zero))
-
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
-    #y = np.roll(x, echo_step)
+
+    y = np.roll(x, echo_step)
     y[y > 0] = 1
     y[y < 0] = 0
+    #Reset data that is extra to zero instead of just removing it from the x vector
+    y[:, 0:echo_step] = 0
 
     #Flatten into vector
     x = x.flatten()
@@ -192,8 +185,8 @@ def train_model(x_train, x_test, y_train, y_test):
     saver = tf.train.Saver()
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        #saver.restore(sess, "models/98/model.ckpt")
+        #sess.run(tf.global_variables_initializer())
+        saver.restore(sess, "models/98/model.ckpt")
 
         plt.ion()
         plt.figure()
@@ -256,10 +249,9 @@ def train_model(x_train, x_test, y_train, y_test):
             print("Test Loss: ", np.sum(test_loss)/len(test_loss))
             print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")
 
-            if echo_step % 10 == 0:
-                path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
-                save_path = saver.save(sess, path_name)
-                print("Model saved in file: %s" % save_path)
+            path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
+            save_path = saver.save(sess, path_name)
+            print("Model saved in file: %s" % save_path)
 
             avg_accuracy = []
 
