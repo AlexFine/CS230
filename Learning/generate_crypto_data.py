@@ -38,6 +38,28 @@ def read_data(dir):
 
     return price_matrix
 
+#Return a vector of usable data
+def read_single_data(currency):
+    count = 0
+    price_vec = []
+    price_matrix = np.zeros((1999,1))
+
+    #Loop through each file name in directory
+    with open(currency, newline='') as currency_file:
+        #Get file data
+        data = csv.reader(currency_file, delimiter=',', quotechar='|')
+        #Loop through file data
+        for row in data:
+            #Append to output vector
+            if count > 0:
+                price_vec.append(float(row[1]))
+            count += 1
+
+    price_vec = price_vec[0:1999]
+    count = 0
+
+    return price_vec
+
 #Retrieve a dictionary of vector of prices & time for the last day
 def get_past_day_price(currency):
     data = price.get_historical_data(currency, 'USD', 'minute', aggregate=1, limit=(2001))
@@ -92,7 +114,7 @@ def store_top_n(n):
         count += 1
         print(count)
         #Currently we're normalizing the data before we store it
-        download_dir = "normalized_2k_min_data/06-05/" + i["SYMBOL"] + ".csv"
+        download_dir = "normalized_2k_min_data/06-06/" + i["SYMBOL"] + ".csv"
         #Open directory
         csv = open(download_dir, "w")
         #Write the header

@@ -33,7 +33,46 @@ We then need the algorithm to run every minute. Every minute the following occur
 6. Compare predicted change vs. market performance
 """
 
+
 """Seperately, I need to create the algorithm to concatinate data blocks of
 currencies by time. To do this we need two algorithms:
 1. Append data blocks by time and add them to each other correctly
 2. Run every day"""
+
+
+"""Model: Get everything working on multiple data inputs"""
+
+"""
+Add in a feature to save the hyperparameters set, and the loss value at different points.
+Run with different sets of hyperparameters and optomize them for minimum test loss
+"""
+
+
+"""TO DO LIST:
+Model:
+1. Get model working on multiple inputs
+2.
+
+Data:
+1. Finish preprocessing algorithms (merge alg)
+2. Get tweet data sets
+3. Get media data sets
+4. Select the 100 currencies to analyze (store in list or something)
+5. Concatinate data sets into singular csv dictionaries per currency per minute
+
+Optimization:
+1. Optomize that shit yo
+
+Implementation:
+1. Predict algorithm
+2. Compare performance to market """
+
+
+"""
+1. Pick top 100 num_currencies
+2. Scrape 2000 minute data
+3. Concatinate data in time series, save to master data-set
+4. Evolve model for multiple inputs
+
+
+"""

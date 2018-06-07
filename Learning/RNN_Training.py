@@ -16,13 +16,16 @@ num_epochs = 1000
 num_currencies = 100
 data_len = 2000
 train_len = 1800
-truncated_backprop_length = 30
-state_size = 4
+truncated_backprop_length = 30 #Hyper-parameter
+state_size = 4 #Hyper-parameter
 num_classes = 2
 echo_step = 1
-batch_size = 6
-num_layers = 3
-learning_rate = 0.3
+batch_size = 6 #Hyper-parameter
+num_layers = 2 #Hyper-parameter
+learning_rate = 0.001 #Hyper-parameter
+beta1 = 0.9 #Hyper-parameter
+beta2 = 0.999 #Hyper-parameter
+
 
 total_examples = data_len*(num_currencies + 1)
 #The number of training examples
@@ -39,7 +42,7 @@ print("num_batches: ", num_batches)
 def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = read_data("normalized_2k_min_data/06-05/")
+    x = read_data("normalized_2k_min_data/06-06/")
     x = x[train_len:data_len, :]
 
     #Set Y output vector
@@ -66,7 +69,7 @@ def generateTestData():
 def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
-    x = read_data("normalized_2k_min_data/06-05/")
+    x = read_data("normalized_2k_min_data/06-06/")
     x = x[0:train_len, :]
 
     #Set Y output vector
@@ -187,7 +190,7 @@ def train_model(x_train, x_test, y_train, y_test):
 
     total_loss = cost(logits, labels)
 
-    train_step = tf.train.AdamOptimizer().minimize(total_loss)
+    train_step = tf.train.AdamOptimizer(learning_rate = learning_rate, beta1 = beta1, beta2 = beta2).minimize(total_loss)
 
     saver = tf.train.Saver()
 
@@ -256,10 +259,9 @@ def train_model(x_train, x_test, y_train, y_test):
             print("Test Loss: ", np.sum(test_loss)/len(test_loss))
             print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")
 
-            if echo_step % 10 == 0:
-                path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
-                save_path = saver.save(sess, path_name)
-                print("Model saved in file: %s" % save_path)
+            path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
+            save_path = saver.save(sess, path_name)
+            print("Model saved in file: %s" % save_path)
 
             avg_accuracy = []
 
