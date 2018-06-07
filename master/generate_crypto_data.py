@@ -28,7 +28,8 @@ def read(dir):
 def read_data(dir):
     count = 0
     price_vec = []
-    price_matrix = np.zeros((2000,1))
+    currency_matrix = np.zeros((2000, 5))
+    price_matrix = np.zeros((1,5))
     currency_list = read(dir)
 
     #Loop through each file name in directory
@@ -41,14 +42,16 @@ def read_data(dir):
             for row in data:
                 #Append to output vector
                 if count > 0:
-                    price_vec.append(float(row[1]))
+                    for i in range(5):
+                        price_vec.append(float(row[1+i]))
                 count += 1
 
-        price_vec = price_vec[0:2000]
-        price_matrix = np.c_[price_matrix, price_vec]
+        currency_matrix = np.reshape(price_vec[0:10000], (2000, 5))
+        price_matrix = np.append(price_matrix, currency_matrix, axis=0)
         price_vec = []
         count = 0
 
+    price_matrix = price_matrix[1:, :]
     return price_matrix
 
 #Return a vector of usable data for a single currency
