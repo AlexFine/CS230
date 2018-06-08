@@ -5,6 +5,7 @@ import csv
 from os import listdir
 from os.path import isfile, join
 
+data_len = 2000
 #Get list of 100 coins we're analyzing
 def retrieve_coins():
     coins = []
@@ -28,7 +29,7 @@ def read(dir):
 def read_data(dir):
     count = 0
     price_vec = []
-    currency_matrix = np.zeros((2000, 5))
+    currency_matrix = np.zeros((data_len, 5))
     price_matrix = np.zeros((1,5))
     currency_list = read(dir)
 
@@ -46,7 +47,7 @@ def read_data(dir):
                         price_vec.append(float(row[1+i]))
                 count += 1
 
-        currency_matrix = np.reshape(price_vec[0:10000], (2000, 5))
+        currency_matrix = np.reshape(price_vec[0:data_len*5], (data_len, 5))
         price_matrix = np.append(price_matrix, currency_matrix, axis=0)
         price_vec = []
         count = 0
@@ -277,3 +278,88 @@ def store_raw_percent_change(dir):
             csv.write(row)
 
     return 0
+
+#Merge two files by time period
+def update(dir1, dir2):
+    coins = retrieve_coins()
+
+    for i in coins:
+        #Download main directory to dictionary
+        master_dict = csv_to_dictionary(dir1 + i)
+        m_time_list = master_dict["time"]
+        #Retrieve final time slot
+        final_time = m_time_list[-1]
+
+        #Download updated file
+        append_dict = csv_to_dictionary(dir2 + i)
+        a_time_list = append_dict["time"]
+        #Find index of most recent time value
+        index = a_time_list.index(final_time)
+        print(index)
+
+        ret_dict = {
+            "time": append_dict["time"][index:],
+            "min1": append_dict["min1"][index:],
+            "min5": append_dict["min5"][index:],
+            "min15": append_dict["min15"][index:],
+            "min30": append_dict["min30"][index:],
+            "h1": append_dict["h1"][index:]
+        }
+        print(dir1 + i)
+        dictionary_to_csv(ret_dict, dir1 + i)
+
+#Convert a csv to a dictionary
+def csv_to_dictionary(dir):
+    time = []
+    min1 = []
+    min5 = []
+    min15 = []
+    min30 = []
+    h1 = []
+
+    ret_file = {
+        "time": time,
+        "min1": min1,
+        "min5": min5,
+        "min15": min15,
+        "min30": min30,
+        "h1": h1
+    }
+
+    with open(dir + ".csv", newline='') as currency_file:
+        #Get file data
+        temp_data = csv.reader(currency_file, delimiter=',', quotechar='|')
+
+        #Add to dictionary
+        for row in temp_data:
+            time.append(row[0])
+            min1.append(row[1])
+            min5.append(row[2])
+            min15.append(row[3])
+            min30.append(row[4])
+            h1.append(row[5])
+
+    return ret_file
+
+#Convert a dictionary to a csv
+def dictionary_to_csv(dict, dir):
+    time_list = dict["time"]
+    min1_list = dict["min1"]
+    min5_list = dict["min5"]
+    min15_list = dict["min15"]
+    min30_list = dict["min30"]
+    h1_list = dict["h1"]
+
+    csv = open(dir + ".csv", "a")
+
+    for i in range(len(time_list)):
+        row = time_list[i] + ", " + min1_list[i] + ", " + min5_list[i] + ", " + min15_list[i] + ", " + min30_list[i] + ", " + h1_list[i] + "\n"
+        csv.write(row)
+
+    csv.close()
+
+def master_update():
+    store_raw_percent_change("temp_data/")
+    update("data/normalized_price_data/", "data/temp_data/")
+
+master_update()

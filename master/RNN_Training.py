@@ -187,10 +187,6 @@ def train_model(x_train, x_test, y_train, y_test):
     correct_prediction = tf.equal(tf.argmax(logits,  axis=1), tf.cast(labels, tf.int64))
     accuracy = tf.reduce_mean(tf.cast(correct_prediction,tf.float32))
 
-    #print(predictions_series)
-
-    #accuracy = tf.metrics.accuracy(labels = labels, predictions = tf.argmax(predictions_series, axis = 1))
-
     total_loss = cost(logits, labels)
 
     train_step = tf.train.AdamOptimizer(learning_rate = learning_rate, beta1 = beta1, beta2 = beta2).minimize(total_loss)
