@@ -20,12 +20,12 @@ truncated_backprop_length = 30 #Hyper-parameter
 state_size = 4 #Hyper-parameter
 num_classes = 2
 echo_step = 1
-batch_size = 6 #Hyper-parameter
+batch_size = 10 #Hyper-parameter
 num_layers = 2 #Hyper-parameter
 learning_rate = 0.001 #Hyper-parameter
 beta1 = 0.9 #Hyper-parameter
 beta2 = 0.999 #Hyper-parameter
-
+num_inputs = 5
 
 total_examples = data_len*(num_currencies + 1)
 #The number of training examples
@@ -70,13 +70,12 @@ def generateTrainData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
     x = read_data("data/normalized_price_data/")
-    x = x[0:train_len, :]
+    #x = x[0:train_len, :]
 
     #Set Y output vector
-    y = x[1:, :]
-    zero = np.zeros((1, len(x[1])))
-    zero = zero.astype(float)
-    y = np.vstack((y, zero))
+    y = x[1:, 0]
+    print(y.shape)
+    y = np.append(y, 0)
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
     #y = np.roll(x, echo_step)
@@ -84,18 +83,22 @@ def generateTrainData():
     y[y < 0] = 0
 
     #Flatten into vector
-    x = x.flatten()
+    #x = x.flatten()
     y = y.flatten()
     #Run the algorithm through batches in order to increase performance
     #Turn our vector of shape (total_series_length, 1) into a matrix of batches
-    x = x.reshape((batch_size, -1))  # The first index changing slowest, subseries as rows
+    print("X Shape: ", x.shape)
+    x = x.reshape((batch_size, -1, num_inputs))  # The first index changing slowest, subseries as rows
     y = y.reshape((batch_size, -1))
 
+    print("X SHape: ", x.shape)
+    print("Y SHape: ", y.shape)
     return (x, y)
 
 def parameters():
     #Create tensors to store batch data
-    batchX_placeholder = tf.placeholder(tf.float32, [batch_size, truncated_backprop_length])
+    #Edit to accomodate matrices
+    batchX_placeholder = tf.placeholder(tf.float32, [batch_size, truncated_backprop_length, num_inputs])
     batchY_placeholder = tf.placeholder(tf.int32, [batch_size, truncated_backprop_length])
 
     init_state = tf.placeholder(tf.float32, [num_layers, 2, batch_size, state_size])
@@ -129,7 +132,7 @@ def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholde
 
     cell = tf.nn.rnn_cell.MultiRNNCell(stacked_rnn, state_is_tuple=True)
     #NEW
-    states_series, current_state = tf.nn.dynamic_rnn(cell, tf.expand_dims(batchX_placeholder, -1), initial_state=rnn_tuple_state)
+    states_series, current_state = tf.nn.dynamic_rnn(cell, batchX_placeholder, initial_state=rnn_tuple_state)
     states_series = tf.reshape(states_series, [-1, state_size])
 
     #Logits shape [batch_size*truncated_backprop_length, num_classes]
@@ -217,7 +220,7 @@ def train_model(x_train, x_test, y_train, y_test):
                 start_idx = batch_idx * truncated_backprop_length
                 end_idx = start_idx + truncated_backprop_length
 
-                batchX = x_train[:,start_idx:end_idx]
+                batchX = x_train[:, start_idx:end_idx, :]
                 batchY = y_train[:,start_idx:end_idx]
 
                 _total_loss, _train_step, _current_state, _predictions_series, _accuracy = sess.run(
@@ -238,7 +241,7 @@ def train_model(x_train, x_test, y_train, y_test):
                     plot(loss_list, _predictions_series, batchX, batchY, accuracy_list)
 
 
-            for batch_idx in range(num_test_batches):
+            """for batch_idx in range(num_test_batches):
                 start_idx = batch_idx * truncated_backprop_length
                 end_idx = start_idx + truncated_backprop_length
 
@@ -261,7 +264,7 @@ def train_model(x_train, x_test, y_train, y_test):
 
             path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
             save_path = saver.save(sess, path_name)
-            print("Model saved in file: %s" % save_path)
+            print("Model saved in file: %s" % save_path)"""
 
             avg_accuracy = []
 

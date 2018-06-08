@@ -24,4 +24,14 @@ def difference(arr, time):
 
     return sub
 
-difference(np.arange(20))
+def reshape():
+    x = np.arange(100).reshape(20,5)
+    z = np.arange(20)*5
+    size = 2
+    print(x)
+    y = x.reshape(size, -1, 5)
+    z = z.reshape(size, -1)
+    print(y.shape)
+    print(z.shape)
+    print(y)
+    print(z)
