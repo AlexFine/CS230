@@ -14,17 +14,17 @@ import matplotlib.pyplot as plt
 
 num_epochs = 1000
 num_currencies = 100
-data_len = 2000
-train_len = 1800
+data_len = 3000
+train_len = 2900
 truncated_backprop_length = 30 #Hyper-parameter
-state_size = 4 #Hyper-parameter
+state_size = 5 #Hyper-parameter
 num_classes = 2
 echo_step = 1
-batch_size = 10 #Hyper-parameter
+batch_size = 5 #Hyper-parameter
 num_layers = 2 #Hyper-parameter
-learning_rate = 0.001 #Hyper-parameter
-beta1 = 0.9 #Hyper-parameter
-beta2 = 0.999 #Hyper-parameter
+learning_rate = 0.01 #Hyper-parameter
+beta1 = .9 #Hyper-parameter
+beta2 = .999 #Hyper-parameter
 num_inputs = 5
 
 total_examples = data_len*(num_currencies + 1)
@@ -91,8 +91,8 @@ def generateTrainData():
     x = x.reshape((batch_size, -1, num_inputs))  # The first index changing slowest, subseries as rows
     y = y.reshape((batch_size, -1))
 
-    print("X SHape: ", x.shape)
-    print("Y SHape: ", y.shape)
+    print("X Shape: ", x.shape)
+    print("Y Shape: ", y.shape)
     return (x, y)
 
 def parameters():
@@ -145,8 +145,6 @@ def lstm_forward_prop (W2, b2, init_state, batchX_placeholder, batchY_placeholde
     logits_series = tf.unstack(tf.reshape(logits, [batch_size, truncated_backprop_length, num_classes]), axis=1)
     predictions_series = [tf.nn.softmax(logit) for logit in logits_series]
 
-    #predictions_series = tf.Print(predictions_series, [predictions_series], "Predictions")
-
     return logits, labels, current_state, predictions_series
 
 def cost(logits, labels):
@@ -195,7 +193,7 @@ def train_model(x_train, x_test, y_train, y_test):
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        #saver.restore(sess, "models/98/model.ckpt")
+        #saver.restore(sess, "models/81/model.ckpt")
 
         plt.ion()
         plt.figure()
@@ -233,7 +231,7 @@ def train_model(x_train, x_test, y_train, y_test):
                     accuracy_list.append(_accuracy)
                     loss_list.append(_total_loss)
                     print("Step",batch_idx, "Loss", _total_loss)
-                    print("Accuracy: ", _accuracy*100, "%")
+                    print("Accuracy: ", np.sum(avg_accuracy)/len(avg_accuracy) *100, "%")
                     plot(loss_list, _predictions_series, batchX, batchY, accuracy_list)
 
 
@@ -256,11 +254,12 @@ def train_model(x_train, x_test, y_train, y_test):
                 test_accuracy.append(_accuracy)
 
             print("Test Loss: ", np.sum(test_loss)/len(test_loss))
-            print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")
-
-            path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
-            save_path = saver.save(sess, path_name)
-            print("Model saved in file: %s" % save_path)"""
+            print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")"""
+            if epoch_idx % 10 == 0:
+                #path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
+                path_name = "models/" + str(int(np.sum(avg_accuracy)/len(avg_accuracy) * 100)) + "/model.ckpt"
+                save_path = saver.save(sess, path_name)
+                print("Model saved in file: %s" % save_path)
 
             avg_accuracy = []
 

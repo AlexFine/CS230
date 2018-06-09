@@ -5,7 +5,7 @@ import csv
 from os import listdir
 from os.path import isfile, join
 
-data_len = 2000
+data_len = 2150
 #Get list of 100 coins we're analyzing
 def retrieve_coins():
     coins = []
@@ -361,5 +361,3 @@ def dictionary_to_csv(dict, dir):
 def master_update():
     store_raw_percent_change("temp_data/")
     update("data/normalized_price_data/", "data/temp_data/")
-
-master_update()
