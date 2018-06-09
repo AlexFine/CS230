@@ -5,11 +5,11 @@ import csv
 from os import listdir
 from os.path import isfile, join
 
-data_len = 2150
+data_len = 4400
 #Get list of 100 coins we're analyzing
-def retrieve_coins():
+def retrieve_coins(dir):
     coins = []
-    with open("coin_list.csv", newline='') as currency_file:
+    with open(dir, newline='') as currency_file:
         #Get file data
         data = csv.reader(currency_file, delimiter=',', quotechar='|')
         #Loop through file data
@@ -31,12 +31,12 @@ def read_data(dir):
     price_vec = []
     currency_matrix = np.zeros((data_len, 5))
     price_matrix = np.zeros((1,5))
-    currency_list = read(dir)
+    currency_list = retrieve_coins("coin_list.csv")
 
     #Loop through each file name in directory
     for currency in currency_list:
         #Open file
-        with open(dir + currency, newline='') as currency_file:
+        with open(dir + currency + ".csv", newline='') as currency_file:
             #Get file data
             data = csv.reader(currency_file, delimiter=',', quotechar='|')
             #Loop through file data
@@ -109,7 +109,7 @@ def get_past_hour_price(currency):
 #Only needs to be run once
 def list_top_n(n):
     coins = top.get_top_coins('USD', limit = n)
-    download_dir = "coin_list.csv"
+    download_dir = "coin_list_" + str(n) + ".csv"
     csv = open(download_dir, "w")
     #csv.write("symbol" + "\n")
 
@@ -122,7 +122,7 @@ def list_top_n(n):
 
 #Store top n currency's last day of data
 def store_top_n(n):
-    coins = retrieve_coins()
+    coins = retrieve_coins("coin_list.csv")
 
     #Iterate through list of coins
     count = 0
@@ -199,7 +199,7 @@ def normalize_diff(vec):
 
 #Store raw data for currency set
 def store_raw(dir):
-    coins = retrieve_coins()
+    coins = retrieve_coins("coin_list.csv")
 
     count = 0
     for i in coins:
@@ -225,7 +225,7 @@ def store_raw(dir):
 
 #Store raw change for currency set
 def store_raw_change(dir):
-    coins = retrieve_coins()
+    coins = retrieve_coins("coin_list.csv")
 
     count = 0
     for i in coins:
@@ -251,7 +251,7 @@ def store_raw_change(dir):
 
 #Store raw percent change for currency set
 def store_raw_percent_change(dir):
-    coins = retrieve_coins()
+    coins = retrieve_coins("coin_list.csv")
 
     count = 0
     for i in coins:
@@ -281,7 +281,7 @@ def store_raw_percent_change(dir):
 
 #Merge two files by time period
 def update(dir1, dir2):
-    coins = retrieve_coins()
+    coins = retrieve_coins("coin_list.csv")
 
     for i in coins:
         #Download main directory to dictionary

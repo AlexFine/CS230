@@ -13,19 +13,21 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 num_epochs = 1000
-num_currencies = 100
-data_len = 3000
-train_len = 2900
+num_currencies = 99
+num_test_currencies = 1
+data_len = 4400
+train_len = 4400
 truncated_backprop_length = 30 #Hyper-parameter
-state_size = 5 #Hyper-parameter
+state_size = 5 #Hyper-parameter MODEL NECESSARY
 num_classes = 2
 echo_step = 1
 batch_size = 5 #Hyper-parameter
-num_layers = 2 #Hyper-parameter
-learning_rate = 0.01 #Hyper-parameter
+num_layers = 2 #Hyper-parameter MODEL NECESSARY
+learning_rate = 0.02 #Hyper-parameter
 beta1 = .9 #Hyper-parameter
 beta2 = .999 #Hyper-parameter
 num_inputs = 5
+time = 0
 
 total_examples = data_len*(num_currencies + 1)
 #The number of training examples
@@ -33,7 +35,7 @@ train_num = train_len*(num_currencies + 1)
 total_series_length = train_num
 num_batches = total_series_length//batch_size//truncated_backprop_length
 
-test_num = (data_len - train_len)*(num_currencies + 1)
+test_num = (data_len)*(num_test_currencies)
 total_test_series_length = test_num
 num_test_batches = total_test_series_length//batch_size//truncated_backprop_length
 
@@ -43,13 +45,12 @@ def generateTestData():
     #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
     x = read_data("data/normalized_price_data/")
-    x = x[train_len:data_len, :]
 
-    #Set Y output vector
-    y = x[1:, :]
-    zero = np.zeros((1, len(x[1])))
-    zero = zero.astype(float)
-    y = np.vstack((y, zero))
+    x = x[0:data_len*num_test_currencies, :]
+
+    y = x[1:, time]
+    print(y.shape)
+    y = np.append(y, 0)
 
     #Shift the vector by the echo_step. I think the echo_step will be 1 for our main vector
     #y = np.roll(x, echo_step)
@@ -57,23 +58,25 @@ def generateTestData():
     y[y < 0] = 0
 
     #Flatten into vector
-    x = x.flatten()
+    #x = x.flatten()
     y = y.flatten()
     #Run the algorithm through batches in order to increase performance
     #Turn our vector of shape (total_series_length, 1) into a matrix of batches
-    x = x.reshape((batch_size, -1))  # The first index changing slowest, subseries as rows
+    print("X Shape: ", x.shape)
+    x = x.reshape((batch_size, -1, num_inputs))  # The first index changing slowest, subseries as rows
     y = y.reshape((batch_size, -1))
 
+    print("X Shape: ", x.shape)
+    print("Y Shape: ", y.shape)
     return (x, y)
 
 def generateTrainData():
-    #Start by creating a random vector of data, half 0s and half 1s
     #x = np.array(np.random.choice(2, total_series_length, p=[0.5, 0.5]))
     x = read_data("data/normalized_price_data/")
     #x = x[0:train_len, :]
 
     #Set Y output vector
-    y = x[1:, 0]
+    y = x[1:, time]
     print(y.shape)
     y = np.append(y, 0)
 
@@ -192,8 +195,8 @@ def train_model(x_train, x_test, y_train, y_test):
     saver = tf.train.Saver()
 
     with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        #saver.restore(sess, "models/81/model.ckpt")
+        #sess.run(tf.global_variables_initializer())
+        saver.restore(sess, "models/78/model.ckpt")
 
         plt.ion()
         plt.figure()
@@ -235,12 +238,12 @@ def train_model(x_train, x_test, y_train, y_test):
                     plot(loss_list, _predictions_series, batchX, batchY, accuracy_list)
 
 
-            """for batch_idx in range(num_test_batches):
+            for batch_idx in range(num_test_batches):
                 start_idx = batch_idx * truncated_backprop_length
                 end_idx = start_idx + truncated_backprop_length
 
-                batchX = x_test[:,start_idx:end_idx]
-                batchY = y_test[:,start_idx:end_idx]
+                batchX = x_train[:, start_idx:end_idx, :]
+                batchY = y_train[:,start_idx:end_idx]
 
                 _test_loss, _accuracy = sess.run(
                     [total_loss, accuracy],
@@ -254,10 +257,11 @@ def train_model(x_train, x_test, y_train, y_test):
                 test_accuracy.append(_accuracy)
 
             print("Test Loss: ", np.sum(test_loss)/len(test_loss))
-            print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")"""
+            print("Test Accuracy: ", np.sum(test_accuracy)/len(test_accuracy) * 100, "%")
+
             if epoch_idx % 10 == 0:
-                #path_name = "models/" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
-                path_name = "models/" + str(int(np.sum(avg_accuracy)/len(avg_accuracy) * 100)) + "/model.ckpt"
+                path_name = "models/" + "state_" + str(state_size) + "_layernum_" + str(num_layers) + "_pred_" + str(time) + "_datalen_" + str(data_len) + "_test_" + str(int(np.sum(test_accuracy)/len(test_accuracy) * 100)) + "/model.ckpt"
+                #path_name = "models/" + str(int(np.sum(avg_accuracy)/len(avg_accuracy) * 100)) + "/model.ckpt"
                 save_path = saver.save(sess, path_name)
                 print("Model saved in file: %s" % save_path)
 
