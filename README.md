@@ -1,5 +1,7 @@
 # CS230
 
+*Twitter data and prolonged price data were all too large to keep in Github Repo (exceeded the 100mg max). All kept on server. *
+
 ___Description___: This NN uses social media data to predict price change among cryptocurrencies. The goal of the algorithm is to predict positive change with high accuracy, and predicts over the below-mentioned time periods.
 
 First, the algorithm aggregates all the data from every currency to train a general model with very low variance. This model is used to initialize custom models for each currency. Each currency is then trained on it's own unique dataset. This approach takes advantage of the massive amount of data availible across all currencies for better training, yet still mantains the advantage of customization per currency. It also helps to avoid overfitting.
